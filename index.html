@@ -1,0 +1,1874 @@
+<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"></head><body>
+<title>Droneland - Field Calculator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+[hidden] { display: none !important; }
+/* Layout: two-panel flight-deck — inputs column on the left, readouts board on the right; stacks on phones */
+:root {
+  --bg: #eef1f3;
+  --panel: #ffffff;
+  --ink: #17212b;
+  --muted: #5b6875;
+  --line: #d3dae0;
+  --accent: #d9730d;          /* aviation amber */
+  --accent-soft: #fbead8;
+  --field: #f6f8f9;
+  --good: #1f8a4c;  --good-bg: #e2f3e9;
+  --warn: #b26a00;  --warn-bg: #fdf0d9;
+  --bad:  #c0362c;  --bad-bg:  #fbe3e0;
+  --fp-a: rgba(217,115,13,.22);
+  --fp-b: rgba(40,110,170,.20);
+  /* five-stage sharpness scale, poor → optimal (fills carry their own text colour) */
+  --s1: #d23b2f; --s1-fg: #ffffff;
+  --s2: #e0761a; --s2-fg: #1f1003;
+  --s3: #f0c419; --s3-fg: #2a2100;
+  --s4: #8cc152; --s4-fg: #13240a;
+  --s5: #1f9a55; --s5-fg: #ffffff;
+  --f-display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11171d; --panel: #18212a; --ink: #e6ebef; --muted: #93a1ae; --line: #2a3642;
+  --accent: #f39a3d; --accent-soft: #3a2a18; --field: #121a21;
+  --good: #4cc483; --good-bg: #173326; --warn: #f0b350; --warn-bg: #3a2c12; --bad: #f2776c; --bad-bg: #3d1d1a;
+  --fp-a: rgba(243,154,61,.25); --fp-b: rgba(90,160,220,.25); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11171d; --panel: #18212a; --ink: #e6ebef; --muted: #93a1ae; --line: #2a3642;
+  --accent: #f39a3d; --accent-soft: #3a2a18; --field: #121a21;
+  --good: #4cc483; --good-bg: #173326; --warn: #f0b350; --warn-bg: #3a2c12; --bad: #f2776c; --bad-bg: #3d1d1a;
+  --fp-a: rgba(243,154,61,.25); --fp-b: rgba(90,160,220,.25); color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 96px;   /* room for the floating sharpness badge */
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; margin-bottom: 22px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 30px; letter-spacing: .01em; margin: 0; text-wrap: balance; }
+h1 span { color: var(--accent); }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 60ch; }
+.setwrap { position: relative; }
+.setbtn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; }
+.setbtn:hover, .setbtn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); }
+.setpop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 35; display: flex; flex-direction: column; gap: 8px; padding: 12px; min-width: 200px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); }
+.setk { font: 600 11px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.setpop .units { display: flex; } .setpop .units button { flex: 1; min-height: 38px; }
+.units { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel); }
+.units button { font: 600 13px var(--f-display); letter-spacing: .06em; text-transform: uppercase; padding: 7px 14px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.units button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+.tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 18px; }
+.tabs button { font: 600 15px var(--f-display); letter-spacing: .04em; padding: 8px 18px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--panel); }
+.wrap[data-mode="quick"] .adv { display: none !important; }
+.wrap[data-mode="advanced"] .quick-only { display: none !important; }
+
+/* Side by side down to 700px (tablets, small laptops); results reflow by their own width below */
+.grid { display: grid; grid-template-columns: minmax(270px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 700px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1000px) { .panel { padding: 14px; } .col { gap: 12px; } }
+@media (max-width: 700px) { .wrap { padding-block: 18px 36px; } h1 { font-size: 24px; } header { margin-bottom: 14px; flex-wrap: nowrap; align-items: start; } }
+.out { container-type: inline-size; container-name: out; }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; min-width: 0; }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+h2 { font: 700 16px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line); display: flex; justify-content: flex-start; align-items: center; gap: 8px; }
+.colbtn { display: none; }
+@media (max-width: 700px) {
+.colbtn { flex: none; width: 30px; height: 30px; margin: -6px -6px -6px 0; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+.colbtn:hover { color: var(--accent); background: var(--accent-soft); }
+.colbtn svg { transition: transform .15s ease; }
+.panel.collapsed > .colbtn svg, .panel.collapsed > h2 .colbtn svg { transform: rotate(-90deg); }
+.panel > h2 { cursor: pointer; }
+.panel.collapsed > :not(h2) { display: none !important; }
+.panel.collapsed > h2 { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
+}   /* collapsible cards: phones only */
+h2::before { content: ""; width: 4px; height: 14px; border-radius: 1px; background: var(--accent); margin-right: 2px; flex: none; }
+h2 > span:first-child { margin-right: auto; }
+h2 .est { text-transform: none; letter-spacing: 0; font: 400 12px var(--f-body); color: var(--muted); }
+
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fields .full { grid-column: 1 / -1; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; color: var(--muted); min-width: 0; }
+.in { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 6px; background: var(--field); overflow: hidden; }
+.in:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.in input, .in select { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: 500 15px var(--f-mono); padding: 8px 10px; outline: none; }
+.in select { font-family: var(--f-body); }
+.in .u { font: 12px var(--f-mono); color: var(--muted); padding: 0 10px; display: flex; align-items: center; border-left: 1px solid var(--line); }
+.in .u.pre { border-left: 0; border-right: 1px solid var(--line); }
+.in:has(:disabled) { background: transparent; border-style: dashed; }
+.in :disabled { color: var(--muted); cursor: not-allowed; opacity: 1; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+.fhint { font-size: 12px; font-weight: 400; color: var(--muted); }
+.fhint.bad { color: var(--bad); font-weight: 600; }
+
+.camsum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 12px; border-radius: 6px; background: var(--field); border: 1px solid var(--line); }
+.camsum b { font: 500 20px var(--f-mono); color: var(--ink); }
+.camsum span { font-size: 12px; color: var(--muted); }
+
+.assume { font-size: 13px; color: var(--muted); margin: 0; }
+.assume button { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+
+/* Motion-blur safeguard */
+.guard { border: 1.5px solid; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.guard.good { border-color: var(--good); background: var(--good-bg); }
+.guard.warn { border-color: var(--warn); background: var(--warn-bg); }
+.guard.bad  { border-color: var(--bad);  background: var(--bad-bg); }
+.guard .gh { font: 700 18px var(--f-display); letter-spacing: .03em; text-transform: uppercase; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.guard.good .gh { color: var(--good); } .guard.warn .gh { color: var(--warn); } .guard.bad .gh { color: var(--bad); }
+.guard .gh span { font: 500 14px var(--f-mono); text-transform: none; letter-spacing: 0; color: var(--ink); }
+.guard p { margin: 0; }
+.guard ul { margin: 2px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.guard b { font-family: var(--f-mono); font-weight: 500; }
+
+/* Sharpness */
+.sh-top { display: flex; gap: 16px; align-items: center; }
+.donut { flex: none; }
+svg.donut text { font: 500 22px var(--f-mono); fill: var(--ink); }
+@media (prefers-reduced-motion: no-preference) { #dn { transition: stroke-dasharray .25s ease, stroke .25s ease; } }
+.stage { display: inline-block; font: 700 17px var(--f-display); letter-spacing: .06em; text-transform: uppercase; padding: 3px 12px; border-radius: 4px; }
+.sh-top p { margin: 6px 0 0; }
+.pair { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; margin-top: 14px; font-size: 13px; color: var(--muted); }
+.pair .val { font: 500 13px var(--f-mono); color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+.pair .weak { color: var(--ink); font-weight: 600; }
+.expo { display: flex; flex-direction: column; gap: 4px; }
+.expo .pill { align-self: flex-start; }
+.expo span.fhint { line-height: 1.4; }
+.pilot { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
+
+.pilot h3 { font: 600 14px var(--f-display); letter-spacing: .04em; margin: 4px 0 2px; color: var(--accent); }
+.pilot td:nth-child(2) { color: var(--ink); }
+.pilot > div { min-width: 0; }
+.wrap[data-mode="quick"] .pilot .note { display: none; }
+.pilot-warn { margin: 0 0 10px; padding: 8px 10px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); font-weight: 600; font-size: 13px; }
+.copybtn { font: 600 12px var(--f-body); letter-spacing: 0; text-transform: none; padding: 3px 10px; border-radius: 5px; border: 1px solid var(--line); background: var(--field); color: var(--ink); cursor: pointer; }
+.lt { display: inline-flex; align-items: center; gap: 6px; }
+.info { position: relative; flex: none; width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 1px solid var(--muted); background: transparent; color: var(--muted); font: 600 11px/1 var(--f-mono); display: inline-grid; place-items: center; cursor: pointer; }
+.info::after { content: ""; position: absolute; inset: -9px; }   /* bigger touch target */
+.info:hover { border-color: var(--accent); color: var(--accent); }
+.info[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tip { grid-column: 1 / -1; font-size: 13px; line-height: 1.5; color: var(--ink); background: var(--accent-soft); border-radius: 6px; padding: 10px 12px; }
+.tip b { font-weight: 600; }
+.isoq { font: 600 12px var(--f-body); margin-left: 6px; padding: 2px 7px; border-radius: 999px; }
+.isoq.good { color: var(--good); background: var(--good-bg); }
+.isoq.warn { color: var(--warn); background: var(--warn-bg); }
+.isoq.bad  { color: var(--bad);  background: var(--bad-bg); }
+.hdr-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.gsdbtn { font: 600 13px var(--f-display); letter-spacing: .06em; text-transform: uppercase; padding: 7px 14px; border-radius: 6px; border: 1.5px solid var(--accent); background: var(--accent-soft); color: var(--ink); cursor: pointer; }
+.gsdbtn:hover { background: var(--accent); color: #fff; }
+.scrim { position: fixed; inset: 0; background: rgba(10, 16, 22, .45); z-index: 40; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 41; width: min(380px, 100vw); overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgba(0, 0, 0, .25);
+  display: flex; flex-direction: column; gap: 14px;
+  padding-top: max(18px, env(safe-area-inset-top, 0px)); padding-bottom: max(18px, env(safe-area-inset-bottom, 0px));
+  padding-left: 18px; padding-right: max(18px, env(safe-area-inset-right, 0px)); }
+@media (prefers-reduced-motion: no-preference) { .drawer:not([hidden]) { animation: slidein .2s ease-out; } }
+@keyframes slidein { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.drawer-head { display: flex; align-items: center; gap: 8px; }
+.drawer-head h2 { flex: 1; margin: 0; }
+.drawer-x { width: 34px; height: 34px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: 400 22px/1 var(--f-body); cursor: pointer; }
+.drawer-body { display: flex; flex-direction: column; gap: 16px; }
+.g-aspect { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.g-aspect span { width: 100%; font-weight: 500; }
+.g-aspect button { flex: 1; font: 600 13px var(--f-body); padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--muted); cursor: pointer; }
+.g-aspect button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 -3px 0 var(--accent); }
+.g-out { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--field); }
+.g-k { font: 600 12px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.g-v { font: 500 36px var(--f-mono); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.g-v small { font-size: 15px; color: var(--muted); margin-left: 4px; }
+.g-s { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.g-use { align-self: flex-start; }
+.site { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px; }
+.site-l { font-size: 13px; font-weight: 500; color: var(--muted); }
+.site-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.site-pick button { font: 600 13px var(--f-body); padding: 8px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--muted); cursor: pointer; }
+.site-pick button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 -3px 0 var(--accent); }
+.site-out table { margin-top: 2px; }
+.site-out td:nth-child(2) { font-weight: 500; }
+.site-note { margin: 8px 0 0; font-size: 12px; color: var(--warn); background: var(--warn-bg); border-radius: 6px; padding: 8px 10px; }
+.numv { display: inline-flex; align-items: baseline; gap: 4px; }
+.numv input { width: 6.5ch; padding: 0 2px; border: 0; border-bottom: 1.5px dashed var(--line); background: transparent; color: var(--ink); font: 500 18px var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.numv input::-webkit-outer-spin-button, .numv input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.numv input:hover { border-bottom-color: var(--accent); }
+.numv input:focus { outline: none; border-bottom: 1.5px solid var(--accent); background: var(--accent-soft); }
+.numv input:invalid { color: var(--bad); }
+.nu { font: 500 13px var(--f-mono); color: var(--muted); }
+.prof { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.prof .lt { font-size: 13px; font-weight: 500; color: var(--muted); }
+.prof-row { display: flex; gap: 8px; }
+.prof-row .in { flex: 1; min-width: 0; }
+.prof-row .in input { font-family: var(--f-body); }
+.prof-lens { display: flex; flex-direction: column; gap: 6px; }
+.lensrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 6px; }
+@media (max-width: 420px) { .lensrow { grid-template-columns: repeat(3, minmax(0, 1fr)); } .lensrow button { grid-column: 1 / -1; } }
+.prof-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; margin-top: 6px; }
+.copybtn.danger { border-color: var(--bad); color: var(--bad); }
+.copybtn:disabled { opacity: .5; cursor: default; }
+#prof-msg:empty { display: none; }
+/* Floating sharpness badge: appears once the Image sharpness card scrolls out of view */
+.floatsharp { position: fixed; z-index: 30; display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border-radius: 999px;
+  right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0, 0, 0, .22); cursor: pointer; font: inherit; text-align: left; }
+.floatsharp:hover { border-color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .floatsharp:not([hidden]) { animation: fsin .18s ease-out; } #fs-ring { transition: stroke-dasharray .25s ease, stroke .25s ease; } }
+@keyframes fsin { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.fs-txt { display: flex; flex-direction: column; line-height: 1.15; }
+.fs-k { font: 600 11px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.fs-v b { font: 500 18px var(--f-mono); font-variant-numeric: tabular-nums; }
+.fs-l { font: 700 12px var(--f-display); letter-spacing: .06em; text-transform: uppercase; padding: 1px 7px; border-radius: 3px; margin-left: 4px; }
+.slider { display: flex; flex-direction: column; gap: 6px; }
+.fs-x { display: none; }
+/* ---- Phones: bigger touch targets, no iOS input zoom, full-width readout bar */
+
+.sl-head { flex-direction: row; justify-content: space-between; align-items: baseline; }
+.sl-head b { font: 500 18px var(--f-mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.sl-head b#light-v { font: 600 14px var(--f-body); text-align: right; }
+.sl-head b#light-v small { font: 500 12px var(--f-mono); color: var(--muted); margin-left: 4px; }
+input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); height: 24px; cursor: pointer; }
+.slider .scale { margin-top: -2px; }
+.recbtn { width: 100%; font: 600 15px var(--f-display); letter-spacing: .04em; padding: 10px; border-radius: 6px; border: 1.5px solid var(--accent); background: var(--accent-soft); color: var(--ink); cursor: pointer; }
+.recbtn:hover:not(:disabled) { background: var(--accent); color: #fff; }
+.recbtn:disabled { border-color: var(--line); background: transparent; color: var(--muted); cursor: default; }
+.recwrap { margin-top: 14px; }
+.lmeter { display: none; }
+.lmbtn { flex-direction: row; align-items: center; justify-content: center; gap: 8px; min-height: 42px; margin-top: 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: 600 14px var(--f-body); cursor: pointer; }
+.lmbtn:hover { border-color: var(--accent); }
+.lv { position: fixed; inset: 0; z-index: 60; background: #000; display: flex; flex-direction: column; }
+.lv video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.lv-top { position: relative; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; background: rgba(0, 0, 0, .55); color: #fff; font: 500 15px var(--f-body); text-align: center; }
+.lv-panel { position: relative; margin-top: auto; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: rgba(17, 23, 29, .9); color: #e6ebef; text-align: center; }
+.lv-ev { font: 500 40px var(--f-mono); }
+.lv-det { font: 14px var(--f-body); color: #93a1ae; margin-top: 4px; min-height: 1.4em; }
+.lv-btns { display: flex; gap: 12px; margin-top: 14px; }
+.lv-btns button { flex: 1; min-height: 46px; border-radius: 8px; font: 600 16px var(--f-body); border: 1px solid #2a3642; background: #18212a; color: #e6ebef; }
+.lv-btns .lv-use { background: #f39a3d; border-color: #f39a3d; color: #111; }
+.lv-btns .lv-use:disabled { opacity: .4; }
+.lv-note { font: 12px var(--f-body); color: #93a1ae; margin-top: 10px; }
+.lmios { display: none; text-decoration: none; }
+.ios .lmbtn { display: none; }
+.ios .lmbtn.lmios { display: flex; }
+#lm-msg.ok { color: var(--good); } #lm-msg.warn { color: var(--warn); }
+#recnote:empty { display: none; }
+#rectext:empty { display: none; }
+.contrib { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; margin-top: 16px; font-size: 13px; }
+.contrib .bar { height: 8px; }
+.contrib .val { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.contrib .top { color: var(--ink); font-weight: 600; }
+
+.status { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { font: 600 13px var(--f-body); padding: 5px 10px; border-radius: 999px; display: inline-flex; gap: 6px; align-items: center; }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.pill.good { color: var(--good); background: var(--good-bg); }
+.pill.warn { color: var(--warn); background: var(--warn-bg); }
+.pill.bad  { color: var(--bad);  background: var(--bad-bg); }
+
+.big { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+
+.big > div { background: var(--panel); padding: 14px 14px 12px; min-width: 0; }
+.big .k { font: 600 12px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.big .v { font: 500 26px var(--f-mono); font-variant-numeric: tabular-nums; margin-top: 4px; white-space: nowrap; }
+.big .v small { font-size: 13px; color: var(--muted); margin-left: 3px; }
+.big .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+td { padding: 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { color: var(--muted); padding-right: 12px; }
+td:nth-child(2) { font-family: var(--f-mono); text-align: right; overflow-wrap: anywhere; }
+table { table-layout: fixed; }
+td:first-child { width: 46%; }
+.pilot td:first-child { width: 42%; }
+.pilot td:nth-child(2) { font-family: var(--f-body); font-weight: 600; }
+td .note { display: block; font: 12px var(--f-body); color: var(--muted); white-space: normal; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@container out (max-width: 640px) {
+  .big { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .two, .pilot { grid-template-columns: minmax(0, 1fr); }
+}
+@container out (max-width: 360px) {
+  .big .v { font-size: 21px; }
+  .sh-top { gap: 12px; }
+  .donut { width: 76px; height: 76px; }
+}
+
+.bar { height: 8px; border-radius: 4px; background: var(--field); border: 1px solid var(--line); position: relative; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; }
+.scale { display: flex; justify-content: space-between; font: 11px var(--f-mono); color: var(--muted); margin-top: 3px; }
+.bigv { font: 500 26px var(--f-mono); font-variant-numeric: tabular-nums; }
+.bigv small { font-size: 13px; color: var(--muted); margin-left: 3px; }
+.meter { margin-top: 10px; }
+
+svg text { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); }
+.schem { overflow-x: auto; }
+.advice { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.advice li::marker { color: var(--accent); }
+footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch; }
+@media (prefers-reduced-motion: no-preference) { .bar i { transition: width .25s ease; } }
+/* ---- Phones (kept last so these override the base rules above) */
+@media (max-width: 700px) {
+  .wrap { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .in input, .in select { font-size: 16px; padding-block: 10px; }          /* 16px stops iOS zooming on focus */
+  .numv input { font-size: 18px; min-height: 32px; }
+  input[type="range"] { height: 36px; }
+  .units button { min-height: 40px; }
+  .tabs { display: flex; } .tabs button { flex: 1; min-height: 42px; }
+  .copybtn { min-height: 34px; padding-inline: 12px; }
+  .colbtn { width: 36px; height: 36px; margin: -8px -8px -8px 0; }
+  .lmeter { display: block; }                                          /* camera light meter */
+  /* desktop/tablet only: GSD side tool, assumptions note, footprint diagram, recommendations list, fixed camera specs */
+  #gsd-open, footer, .nomobile, .cam-locked .spec, .cam-locked #camhint { display: none !important; }
+  .floatsharp { left: calc(10px + env(safe-area-inset-left, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    border-radius: 14px; padding: 8px 12px; gap: 10px; }
+  .fs-x { display: flex; flex: 1; flex-direction: column; line-height: 1.15; min-width: 0; }
+  .fs-x b { font: 500 17px var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .fs-x b small { font-size: 11px; color: var(--muted); margin-left: 2px; }
+  .fs-x b.warn { color: var(--warn); } .fs-x b.bad { color: var(--bad); }
+  .floatsharp > svg { order: 3; } .fs-txt { order: 4; }
+  .fs-v b { font-size: 17px; } .fs-l { font-size: 11px; padding: 1px 5px; }
+}
+@media (pointer: coarse) { input[type="range"] { height: 36px; } }
+</style>
+
+<div class="wrap" id="wrap" data-mode="quick">
+  <header>
+    <div>
+      <h1>Droneland <span>Field Calculator</span></h1>
+      <p class="sub">GSD, motion blur, image sharpness, trigger interval and coverage for nadir mapping flights.</p>
+    </div>
+    <div class="hdr-tools">
+      <button type="button" class="gsdbtn" id="gsd-open" aria-haspopup="dialog" aria-controls="gsd-drawer">GSD calculator</button>
+      <div class="setwrap">
+        <button type="button" class="setbtn" id="set-open" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="set-pop">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+        <div class="setpop" id="set-pop" hidden>
+          <span class="setk">Units</span>
+          <div class="units" role="group" aria-label="Units">
+            <button id="u-m" aria-pressed="true">Metric</button>
+            <button id="u-i" aria-pressed="false">Imperial</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Detail level">
+    <button id="t-quick" role="tab" aria-selected="true">Quick</button>
+    <button id="t-adv" role="tab" aria-selected="false">Advanced</button>
+  </div>
+
+  <div class="grid">
+    <!-- INPUTS -->
+    <div class="col">
+      <section class="panel">
+        <h2>Flight</h2>
+        <div class="fields">
+          <div class="full slider">
+            <label class="sl-head" for="alt"><span class="lt">Altitude AGL<button type="button" class="info" data-info="alt" aria-expanded="false" aria-label="About altitude agl">i</button></span> <span class="numv"><input type="number" id="alt" inputmode="decimal" step="any"><span class="nu" id="alt-u"></span></span></label>
+            <input type="range" id="alt-r" aria-label="Altitude AGL slider">
+            <div class="scale" id="alt-scale"></div>
+            <span class="fhint" id="althint"></span>
+          </div>
+          <div class="full slider">
+            <label class="sl-head" for="spd"><span class="lt">Flight speed<button type="button" class="info" data-info="spd" aria-expanded="false" aria-label="About flight speed">i</button></span> <span class="numv"><input type="number" id="spd" inputmode="decimal" step="any"><span class="nu" id="spd-u"></span></span></label>
+            <input type="range" id="spd-r" aria-label="Flight speed slider">
+            <div class="scale" id="spd-scale"></div>
+            <span class="fhint" id="spdhint"></span>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="fo"><span class="lt">Front overlap<button type="button" class="info" data-info="fo" aria-expanded="false" aria-label="About front overlap">i</button></span> <span class="numv"><input type="number" id="fo" inputmode="decimal" step="any"><span class="nu" id="fo-u"></span></span></label>
+            <input type="range" id="fo-r" aria-label="Front overlap slider">
+            <div class="scale" id="fo-scale"></div>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="so"><span class="lt">Side overlap<button type="button" class="info" data-info="so" aria-expanded="false" aria-label="About side overlap">i</button></span> <span class="numv"><input type="number" id="so" inputmode="decimal" step="any"><span class="nu" id="so-u"></span></span></label>
+            <input type="range" id="so-r" aria-label="Side overlap slider">
+            <div class="scale" id="so-scale"></div>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="bl"><span class="lt">Blur limit<button type="button" class="info" data-info="bl" aria-expanded="false" aria-label="About blur limit">i</button></span> <span class="numv"><input type="number" id="bl" inputmode="decimal" step="any"><span class="nu" id="bl-u"></span></span></label>
+            <input type="range" id="bl-r" aria-label="Blur limit slider">
+            <div class="scale" id="bl-scale"></div>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="relief"><span class="lt">Height variation<button type="button" class="info" data-info="relief" aria-expanded="false" aria-label="About height variation">i</button></span> <span class="numv"><input type="number" id="relief" inputmode="decimal" step="any"><span class="nu" id="relief-u"></span></span></label>
+            <input type="range" id="relief-r" aria-label="Height variation slider">
+            <div class="scale" id="relief-scale"></div>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="area"><span class="lt">Survey area<button type="button" class="info" data-info="area" aria-expanded="false" aria-label="About survey area">i</button></span> <span class="numv"><input type="number" id="area" inputmode="decimal" step="any"><span class="nu" id="area-u"></span></span></label>
+            <input type="range" id="area-r" aria-label="Survey area slider">
+            <div class="scale" id="area-scale"></div>
+          </div>
+          <div class="full slider">
+            <label class="sl-head" for="light"><span class="lt">Light conditions<button type="button" class="info" data-info="light" aria-expanded="false" aria-label="About light conditions">i</button></span> <b id="light-v"></b></label>
+            <input type="range" id="light" min="0" step="1">
+            <div class="scale" id="light-scale"></div>
+            <div class="lmeter">
+              <label class="lmbtn" for="lm-file">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                Measure light with camera
+              </label>
+              <button type="button" class="lmbtn lmios" id="lm-sc">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                Measure light with camera
+              </button>
+              <input type="file" id="lm-file" accept="image/*" capture="environment" hidden>
+              <p class="hint" id="lm-msg"></p>
+            </div>
+          </div>
+          <div class="full site">
+            <span class="lt site-l">Site estimate<button type="button" class="info" data-info="site" aria-expanded="false" aria-label="About site estimate">i</button></span>
+            <div class="site-pick" role="group" aria-label="Site estimate">
+              <button type="button" data-site="" aria-pressed="true">None</button>
+              <button type="button" data-site="soccer" aria-pressed="false">Soccer pitch</button>
+              <button type="button" data-site="oval" aria-pressed="false">Athletics oval</button>
+              <button type="button" data-site="golf" aria-pressed="false">Par 4 golf hole</button>
+            </div>
+            <div class="site-out" id="site-out" hidden>
+              <table><tbody id="site-rows"></tbody></table>
+              <p class="site-note">Broad, rough estimates for reference only. Real fields, ovals and golf holes vary in size and shape; plan the actual site in your flight app.</p>
+            </div>
+          </div>
+        </div>
+        <p class="hint adv">Height variation is the tallest terrain rise or object above the ground you set altitude from. It sets how much depth of field you need.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Drone and Camera</h2>
+        <div class="fields">
+          <label class="full"><span class="lt">Drone / payload<button type="button" class="info" data-info="preset" aria-expanded="false" aria-label="About drone / payload">i</button></span>
+            <div class="in"><select id="preset"></select></div>
+          </label>
+          <div class="full camsum" id="camsum"></div>
+          <label class="full" id="lens-l" hidden><span class="lt">Lens<button type="button" class="info" data-info="lens" aria-expanded="false" aria-label="About lens">i</button></span>
+            <div class="in"><select id="lens"></select></div>
+          </label>
+          <label id="mp-l"><span class="lt">Resolution<button type="button" class="info" data-info="mp" aria-expanded="false" aria-label="About resolution">i</button></span><div class="in"><input id="mp" type="number" step="1" min="1"><span class="u">MP</span></div></label>
+          <label id="feq-l"><span class="lt">Focal length<button type="button" class="info" data-info="feq" aria-expanded="false" aria-label="About focal length">i</button></span><div class="in"><input id="feq" type="number" step="1" min="4"><span class="u">mm eq.</span></div></label>
+          <div class="full slider">
+            <label class="sl-head" for="ap-r"><span class="lt">Aperture<button type="button" class="info" data-info="ap" aria-expanded="false" aria-label="About aperture">i</button></span> <b id="apv"></b></label>
+            <input type="range" id="ap-r" min="0" step="1">
+            <div class="scale" id="ap-scale"></div>
+          </div>
+          <div class="full slider">
+            <label class="sl-head" for="ss-r"><span class="lt">Shutter speed<button type="button" class="info" data-info="ss" aria-expanded="false" aria-label="About shutter speed">i</button></span> <b id="ssv"></b></label>
+            <input type="range" id="ss-r" min="0" step="1">
+            <div class="scale" id="ss-scale"></div>
+            <span class="fhint" id="ssnote"></span>
+          </div>
+          <div class="full slider">
+            <label class="sl-head" for="iso-r"><span class="lt">ISO<button type="button" class="info" data-info="iso" aria-expanded="false" aria-label="About iso">i</button></span> <b id="isov"></b></label>
+            <input type="range" id="iso-r" min="0" step="1">
+            <div class="scale" id="iso-scale"></div>
+          </div>
+          <div class="full expo" id="expo" aria-live="polite"></div>
+          <label class="adv full spec"><span class="lt">Sensor size<button type="button" class="info" data-info="fmt" aria-expanded="false" aria-label="About sensor size">i</button></span>
+            <div class="in"><select id="fmt"></select></div>
+          </label>
+          <label class="adv spec"><span class="lt">Sensor width<button type="button" class="info" data-info="sensor" aria-expanded="false" aria-label="About sensor width">i</button></span><div class="in"><input id="sw" type="number" step="0.1" min="1"><span class="u">mm</span></div></label>
+          <label class="adv spec"><span class="lt">Sensor height<button type="button" class="info" data-info="sensor" aria-expanded="false" aria-label="About sensor height">i</button></span><div class="in"><input id="sh" type="number" step="0.1" min="1"><span class="u">mm</span></div></label>
+          <label class="adv spec"><span class="lt">Widest aperture<button type="button" class="info" data-info="range" aria-expanded="false" aria-label="About widest aperture">i</button></span><div class="in"><span class="u pre">f /</span><input id="fmax" type="number" step="0.1" min="1"></div></label>
+          <label class="adv spec"><span class="lt">Narrowest aperture<button type="button" class="info" data-info="range" aria-expanded="false" aria-label="About narrowest aperture">i</button></span><div class="in"><span class="u pre">f /</span><input id="fmin" type="number" step="1" min="2"></div></label>
+          <label class="adv spec"><span class="lt">Fastest shutter<button type="button" class="info" data-info="smax" aria-expanded="false" aria-label="About fastest shutter">i</button></span><div class="in"><span class="u pre">1 /</span><input id="smax" type="number" step="500" min="100"><span class="u">s</span></div></label>
+          <label class="adv spec"><span class="lt">Highest ISO<button type="button" class="info" data-info="isomax" aria-expanded="false" aria-label="About highest iso">i</button></span><div class="in"><input id="isomax" type="number" step="100" min="100"></div></label>
+          <label class="adv spec"><span class="lt">Max ISO to recommend<button type="button" class="info" data-info="isocap" aria-expanded="false" aria-label="About max iso to recommend">i</button></span><div class="in"><input id="isocap" type="number" step="100" min="100"></div></label>
+          <label class="adv spec"><span class="lt">Lowest ISO<button type="button" class="info" data-info="isomin" aria-expanded="false" aria-label="About lowest iso">i</button></span><div class="in"><input id="isomin" type="number" step="100" min="50"></div></label>
+          <label class="adv spec"><span class="lt">Shutter type<button type="button" class="info" data-info="stype" aria-expanded="false" aria-label="About shutter type">i</button></span>
+            <div class="in"><select id="stype"><option value="mechanical">Mechanical</option><option value="global">Global (electronic)</option><option value="rolling">Rolling (electronic)</option></select></div>
+          </label>
+          <label class="adv spec"><span class="lt">Min. capture interval<button type="button" class="info" data-info="mi" aria-expanded="false" aria-label="About min. capture interval">i</button></span><div class="in"><input id="mi" type="number" step="0.1" min="0.1"><span class="u">s</span></div></label>
+          <label class="adv spec"><span class="lt">Long side of photo<button type="button" class="info" data-info="orient" aria-expanded="false" aria-label="About long side of photo">i</button></span>
+            <div class="in"><select id="orient"><option value="across">Across track</option><option value="along">Along track</option></select></div>
+          </label>
+        </div>
+        <p class="hint" id="camhint"></p>
+        <div class="prof" id="prof" hidden>
+          <div id="prof-save" hidden>
+            <span class="lt"><label for="prof-name">Save this camera as a profile</label><button type="button" class="info" data-info="prof" aria-expanded="false" aria-label="About saving a profile">i</button></span>
+            <div class="prof-row">
+              <div class="in"><input id="prof-name" type="text" maxlength="60" placeholder="e.g. Phase One iXM-GS120"></div>
+              <button type="button" class="copybtn" id="prof-save-btn">Save</button>
+            </div>
+            <p class="hint" style="margin:0">Saves the specs on both tabs (sensor size, limits and shutter type are on Advanced). Saved profiles are shared with everyone who uses this page.</p>
+          </div>
+          <div id="prof-lens" class="prof-lens" hidden>
+            <span class="lt">Add a lens to this profile<button type="button" class="info" data-info="addlens" aria-expanded="false" aria-label="About adding a lens">i</button></span>
+            <div class="lensrow">
+              <div class="in"><input id="nl-mm" type="number" step="0.1" min="1" placeholder="80" aria-label="New lens focal length in mm"><span class="u">mm</span></div>
+              <div class="in"><span class="u pre">f/</span><input id="nl-fmax" type="number" step="0.1" min="0.7" placeholder="5.6" aria-label="Widest aperture"></div>
+              <div class="in"><span class="u pre">to f/</span><input id="nl-fmin" type="number" step="1" min="0.7" placeholder="22" aria-label="Narrowest aperture"></div>
+              <button type="button" class="copybtn" id="nl-add">Add lens</button>
+            </div>
+            <p class="hint" style="margin:0">Use the focal length printed on the lens, not the 35 mm equivalent.</p>
+            <button type="button" class="copybtn" id="lens-del" style="align-self:flex-start">Remove the selected lens</button>
+          </div>
+          <div id="prof-remove" hidden>
+            <button type="button" class="copybtn" id="prof-del">Remove this profile</button>
+            <div class="prof-confirm" id="prof-confirm" hidden>
+              <span id="prof-confirm-text"></span>
+              <button type="button" class="copybtn danger" id="prof-del-yes">Remove</button>
+              <button type="button" class="copybtn" id="prof-del-no">Cancel</button>
+            </div>
+          </div>
+          <p class="hint" id="prof-msg" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <p class="assume quick-only" id="assume"></p>
+    </div>
+
+    <!-- OUTPUTS -->
+    <div class="col out">
+      <section class="guard" id="guard" aria-live="polite"></section>
+
+      <section class="panel" id="sharp">
+        <h2><span>Image sharpness</span><span class="est">estimate</span></h2>
+        <div class="sh-top">
+          <svg class="donut" viewBox="0 0 100 100" width="92" height="92" role="img" aria-labelledby="dnt">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="var(--field)" stroke-width="11"/>
+            <circle id="dn" cx="50" cy="50" r="42" fill="none" stroke-width="11" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="0 264"/>
+            <text id="dnt" x="50" y="51" text-anchor="middle" dominant-baseline="central"></text>
+          </svg>
+          <div><span class="stage" id="shstage"></span><p id="shtext"></p></div>
+        </div>
+        <div class="pair" id="pair"></div>
+        <div class="contrib adv" id="contrib"></div>
+        <p class="hint adv" id="shtip"></p>
+        <div class="recwrap">
+          <button type="button" class="recbtn" id="rec">Recommend settings for this altitude</button>
+          <p class="hint" id="recnote"></p>
+          <p class="hint" id="rectext" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Mission check</h2>
+        <div class="status" id="status"></div>
+      </section>
+
+      <div class="big" id="big"></div>
+
+      <section class="panel" id="pilot">
+        <h2><span id="pilot-title">DJI Pilot 2 settings</span><button type="button" class="copybtn" id="copy">Copy</button></h2>
+        <p class="pilot-warn" id="pilotwarn" hidden></p>
+        <div class="pilot">
+          <div><h3>Mapping route</h3><table><tbody id="p-route"></tbody></table></div>
+          <div><h3>Camera</h3><table><tbody id="p-cam"></tbody></table></div>
+        </div>
+        <p class="hint adv" id="pilotnote"></p>
+        <p class="hint quick-only">Key settings only. The full Pilot 2 list is on the Advanced tab.</p>
+      </section>
+
+      <div class="two adv">
+        <section class="panel">
+          <h2>Motion blur</h2>
+          <div class="bigv" id="blurv"></div><div class="hint" style="margin:2px 0 0" id="blurs"></div>
+          <div class="meter"><div class="bar"><i id="blurbar"></i></div><div class="scale"><span>0</span><span>0.5</span><span>1</span><span>1.5</span><span>2+ px</span></div></div>
+        </section>
+        <section class="panel">
+          <h2>Depth of field</h2>
+          <table><tbody id="dof"></tbody></table>
+        </section>
+      </div>
+
+      <div class="two adv">
+        <section class="panel">
+          <h2>Geometry</h2>
+          <table><tbody id="geo"></tbody></table>
+        </section>
+        <section class="panel">
+          <h2>Timing &amp; limits</h2>
+          <table><tbody id="lim"></tbody></table>
+        </section>
+      </div>
+
+      <section class="panel adv nomobile">
+        <h2><span>Footprint &amp; overlap</span><span id="schemlbl" style="text-transform:none;letter-spacing:0;font-family:var(--f-mono);font-weight:400"></span></h2>
+        <div class="schem"><svg id="schem" viewBox="0 0 640 230" width="100%" role="img" aria-label="Footprint schematic showing image overlap"></svg></div>
+      </section>
+
+      <section class="panel nomobile">
+        <h2>Recommendations</h2>
+        <ul class="advice" id="advice"></ul>
+      </section>
+    </div>
+  </div>
+
+  <footer class="adv">
+    Assumes a nadir camera with mechanical shutter (the Mavic 4 Pro and Mini 3 presets are electronic-shutter only and are flagged), focus set on the ground, constant flight speed and square pixels. The sharpness score combines lens sharpness and motion blur. Lens sharpness balances edge softness (easing as you stop down from wide open), diffraction (growing as you stop down, sooner on small pixels) and depth of field over the height variation, so each camera has a best aperture; motion blur comes from flight speed, shutter speed and GSD. Both are estimated as blur size in pixels at the edge of the frame. Lens sharpness is a general model, not a test of your specific lens. Exposure uses typical scene brightness for each light condition (clear midday sun = EV 16, bright sun = EV 15 at ISO 100) and assumes a correctly metered, average ground scene; very dark or bright ground (water, snow, fresh asphalt) needs adjusting. Stopping down lets in less light, so raise ISO rather than slow the shutter. Coverage time excludes takeoff and landing and adds 20% for turns. The altitude warning uses the common 120 m / 400 ft AGL limit; check your local rules and waivers.
+  </footer>
+</div>
+
+<button type="button" class="floatsharp" id="fs" hidden aria-label="Image sharpness score. Show details.">
+  <svg viewBox="0 0 100 100" width="40" height="40" aria-hidden="true">
+    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--field)" stroke-width="14"/>
+    <circle id="fs-ring" cx="50" cy="50" r="40" fill="none" stroke-width="14" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="0 252"/>
+  </svg>
+  <span class="fs-x"><span class="fs-k">GSD</span><b id="fs-gsd"></b></span><span class="fs-x"><span class="fs-k">Blur</span><b id="fs-blur"></b></span><span class="fs-txt"><span class="fs-k">Sharpness</span><span class="fs-v"><b id="fs-v"></b> <span id="fs-l" class="fs-l"></span></span></span>
+</button>
+
+<div class="scrim" id="gsd-scrim" hidden></div>
+<aside class="drawer" id="gsd-drawer" role="dialog" aria-modal="true" aria-labelledby="gsd-title" hidden>
+  <div class="drawer-head">
+    <h2 id="gsd-title"><span>Quick GSD</span></h2>
+    <button type="button" class="drawer-x" id="gsd-close" aria-label="Close GSD calculator">×</button>
+  </div>
+  <p class="hint" style="margin:0">Three numbers from the spec sheet and your planned height.</p>
+  <div class="drawer-body">
+    <div class="slider">
+      <label class="sl-head" for="g-mp"><span class="lt">Resolution<button type="button" class="info" data-info="mp" aria-expanded="false" aria-label="About resolution">i</button></span> <b id="g-mp-v"></b></label>
+      <input type="range" id="g-mp" min="8" max="200" step="1">
+      <div class="scale"><span>8 MP</span><span>200 MP</span></div>
+    </div>
+    <div class="slider">
+      <label class="sl-head" for="g-fl"><span class="lt">Focal length (35 mm eq.)<button type="button" class="info" data-info="feq" aria-expanded="false" aria-label="About focal length">i</button></span> <b id="g-fl-v"></b></label>
+      <input type="range" id="g-fl" min="10" max="200" step="1">
+      <div class="scale"><span>10 mm</span><span>200 mm</span></div>
+    </div>
+    <div class="slider">
+      <label class="sl-head" for="g-alt"><span class="lt">Altitude AGL<button type="button" class="info" data-info="alt" aria-expanded="false" aria-label="About altitude">i</button></span> <b id="g-alt-v"></b></label>
+      <input type="range" id="g-alt">
+      <div class="scale" id="g-alt-scale"></div>
+    </div>
+    <div class="g-aspect" role="group" aria-label="Photo shape">
+      <span class="lt">Photo shape<button type="button" class="info" data-info="aspect" aria-expanded="false" aria-label="About photo shape">i</button></span>
+      <button type="button" id="g-43" aria-pressed="true">4:3 (most drones)</button>
+      <button type="button" id="g-32" aria-pressed="false">3:2 (P1, full frame)</button>
+    </div>
+    <div class="g-out">
+      <div class="g-k">GSD</div>
+      <div class="g-v" id="g-gsd"></div>
+      <div class="g-s" id="g-fp"></div>
+    </div>
+    <button type="button" class="copybtn g-use" id="g-use">Use the drone selected in the calculator</button>
+    <p class="hint" style="margin:0">Uses the 35 mm-equivalent focal length, so sensor size isn't needed. Results can differ slightly from the main calculator, which uses each drone's exact sensor and lens.</p>
+  </div>
+</aside>
+
+<script>
+(() => {
+  // Main cameras only, all mechanical shutter. eq = 35 mm-equivalent focal length.
+  const PRESETS = [
+  // fmax/fmin = widest/narrowest f-number; smax = fastest mechanical shutter (1/x s); isoMax = highest photo ISO.
+  // wide: mechanical-shutter cap at apertures wider than `below` (P1 rates 1/2000 s only at f/5.6 or narrower).
+    { id: "m3e", name: "DJI Mavic 3 Enterprise",  sw: 17.3, sh: 13.0, mp: 20, fl: 12.29, eq: 24, fmax: 2.8, fmin: 11, smax: 2000, isoMax: 6400,  mi: 0.7, payload: "Mavic 3E wide camera", mechToggle: true, elevOpt: true },
+    { id: "m4e", name: "DJI Matrice 4E (wide)",   sw: 17.3, sh: 13.0, mp: 20, fl: 12.29, eq: 24, fmax: 2.8, fmin: 11, smax: 2000, isoMax: 25600, mi: 0.5, payload: "Matrice 4E wide camera", mechToggle: true, elevOpt: true },
+    { id: "p1",  name: "DJI Zenmuse P1",          sw: 35.9, sh: 24.0, mp: 45, fl: 35,    eq: 35, smax: 2000, isoMax: 25600, mi: 0.7, payload: "Zenmuse P1", p1: true,
+      wide: { below: 5.6, smax: 1600 },
+      lenses: [
+        { mm: 24, name: "DJI DL 24mm F2.8 LS ASPH", fmax: 2.8, fmin: 16 },
+        { mm: 35, name: "DJI DL 35mm F2.8 LS ASPH", fmax: 2.8, fmin: 16 },
+        { mm: 50, name: "DJI DL 50mm F2.8 LS ASPH", fmax: 2.8, fmin: 16 },
+        // Inspire 3 (X9) DL-mount lens; fits the P1 but is not officially supported on it
+        { mm: 75, name: "DJI DL 75mm F1.8 LS ASPH (Inspire 3, unofficial)", fmax: 1.8, fmin: 16 } ] },
+    // Consumer drones: electronic (rolling) shutter only, flown with DJI Fly rather than DJI Pilot 2
+    { id: "m4p", name: "DJI Mavic 4 Pro (Hasselblad)", sw: 17.3, sh: 13.0, mp: 100, fl: 14.0, eq: 28, fmax: 2.0, fmin: 11, smax: 8000, isoMax: 6400, mi: 2.0,
+      payload: "Mavic 4 Pro Hasselblad camera", electronic: true, app: "DJI Fly" },
+    { id: "mini3", name: "DJI Mini 3", sw: 9.6, sh: 7.2, mp: 12, fl: 6.7, eq: 24, fmax: 1.7, fmin: 1.7, smax: 8000, isoMax: 3200, mi: 2.0,
+      payload: "Mini 3 camera", electronic: true, app: "DJI Fly" },
+    { id: "custom", name: "Custom camera" }
+  ];
+  const FORMATS = [
+    { id: "half", name: "1/2\" (6.4 × 4.8 mm)",       sw: 6.4,  sh: 4.8 },
+    { id: "one",  name: "1\" (13.2 × 8.8 mm)",         sw: 13.2, sh: 8.8 },
+    { id: "43",   name: "4/3\" (17.3 × 13.0 mm)",      sw: 17.3, sh: 13.0 },
+    { id: "apsc", name: "APS-C (23.5 × 15.6 mm)",      sw: 23.5, sh: 15.6 },
+    { id: "ff",   name: "Full frame (35.9 × 24.0 mm)", sw: 35.9, sh: 24.0 },
+    { id: "custom", name: "Other (enter width and height)" }
+  ];
+  const APERTURES = [1.7, 1.8, 2, 2.2, 2.5, 2.8, 3.2, 3.5, 4, 4.5, 5, 5.6, 6.3, 7.1, 8, 9, 10, 11, 13, 14, 16, 18, 20, 22];
+  const SHUTTERS = [100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000, 5000, 6400, 8000, 10000, 12800, 16000];
+  const STAGES = [
+    { min: 85, key: "s5", label: "Optimal",  text: "Pixel-sharp edge to edge. Ideal for survey-grade orthomosaics." },
+    { min: 70, key: "s4", label: "Good",     text: "Sharp, with slight softness at the edges. Fine for most ground mapping." },
+    { min: 55, key: "s3", label: "Fair",     text: "Noticeable softness. OK for general mapping, not for fine ground detail." },
+    { min: 35, key: "s2", label: "Marginal", text: "Soft imagery. Expect weaker stitching and lost ground detail. Adjust before flying." },
+    { min: 0,  key: "s1", label: "Poor",     text: "Not usable for accurate mapping. Change settings before flight." },
+  ];
+  const ISOS = [100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000, 5000, 6400, 8000, 10000, 12800, 16000, 20000, 25600, 32000, 40000, 51200, 64000];
+  // Scene brightness as EV at ISO 100 (sunny-16 rule: bright sun = EV 15)
+  const LIGHTS = [
+    { id: "clear", name: "Clear midday sun",        ev: 16 },
+    { id: "sun",   name: "Bright sun",              ev: 15 },
+    { id: "hazy",  name: "Hazy sun / thin cloud",   ev: 14 },
+    { id: "over",  name: "Overcast",                ev: 13 },
+    { id: "heavy", name: "Heavy overcast",          ev: 12 },
+    { id: "dull",  name: "Dull, rain or low sun",   ev: 11 },
+  ];
+  const $ = id => document.getElementById(id);
+  const FT = 0.3048, MPH = 0.44704, HA_AC = 2.47105;
+  const state = { units: "metric" };
+  const defaults = { preset: "m3e", alt: 80, spd: 4, fo: 80, so: 70, bl: 0.5, area: 40, ss: 2000, ap: 5.6, relief: 5, orient: "across", mp: 20, feq: 24, smax: 2000, iso: 100, isomax: 6400, isocap: 640, isomin: 100, light: "clear" };
+  let apList = [], ssList = [], isoList = [], last = null;
+
+  const sel = $("preset"), fmtSel = $("fmt");
+  let saved = [];                 // team-saved camera profiles from the shared db, as preset objects
+  let dbRef = null, canWrite = true, dbState = "loading";
+  function buildPresetOptions() {
+    const cur = sel.value;
+    sel.innerHTML = "";
+    PRESETS.filter(p => p.id !== "custom").forEach(p => sel.add(new Option(p.name, p.id)));
+    if (saved.length) {
+      const g = document.createElement("optgroup"); g.label = "Saved profiles";
+      saved.forEach(p => g.appendChild(new Option(p.name, p.id)));
+      sel.appendChild(g);
+    }
+    sel.add(new Option("Custom camera", "custom"));
+    sel.value = [...sel.options].some(o => o.value === cur) ? cur : "custom";
+    return sel.value !== cur;
+  }
+  buildPresetOptions();
+  // Light slider runs darkest (left) to brightest (right)
+  const LIGHT_ORDER = [...LIGHTS].sort((a, b) => a.ev - b.ev);
+  $("light").max = LIGHT_ORDER.length - 1;
+  $("light-scale").innerHTML = `<span>Dull</span><span>Clear sun</span>`;
+  // A camera reading (EV100 from the photo's exposure settings) overrides the preset levels until the slider is moved
+  let measuredEv = null;
+  // Hosted outside Claude (or in the iPhone app): no shared database, so profiles live on this device
+  const HOSTED = !/(^|\.)claudeusercontent\.com$/.test(location.hostname);
+  const HOSTED_URL = "mrpaulrmulligan.github.io/droneland";
+  const SCOPE = HOSTED ? "on this device" : "for everyone using this page";
+  function localDb() {
+    const KEY = "dl-profiles-v1", subs = [];
+    const SEED = { "phaseone-ixm-gs120-150": { name: "Phase One iXM-GS120", sw: 43.9, sh: 32.9, mp: 120, fl: 150,
+      lenses: [{ mm: 80, fmax: 5.6, fmin: 22 }, { mm: 150, fmax: 5.6, fmin: 22 }], fmax: 5.6, fmin: 22, smax: 16000,
+      isoMin: 200, isoMax: 64000, mi: 0.15, shutter: "global", createdAt: "2026-11-09T00:00:00.000Z" } };
+    let rows;
+    try { rows = JSON.parse(localStorage.getItem(KEY)); } catch {}
+    if (!rows || typeof rows !== "object") rows = JSON.parse(JSON.stringify(SEED));
+    const snap = () => ({ metadata: { fromCache: false }, docs: Object.keys(rows)
+      .sort((a, b) => String(rows[a].name).localeCompare(String(rows[b].name)))
+      .map(id => ({ id, data: () => rows[id] })) });
+    const save = () => { try { localStorage.setItem(KEY, JSON.stringify(rows)); } catch {} subs.forEach(f => f(snap())); };
+    return {
+      collection: () => ({
+        add: async d => { const id = "p" + Date.now().toString(36); rows[id] = d; save(); return { id }; },
+        orderBy: () => ({ onSnapshot: cb => { subs.push(cb); cb(snap()); return () => {}; } }) }),
+      doc: path => { const id = path.split("/")[1]; return {
+        delete: async () => { delete rows[id]; save(); },
+        update: async d => { rows[id] = { ...rows[id], ...d }; save(); } }; }
+    };
+  }
+  const curLight = () => measuredEv !== null ? { id: "measured", name: "Measured light", ev: measuredEv }
+    : LIGHT_ORDER[+$("light").value] || LIGHT_ORDER[LIGHT_ORDER.length - 1];
+  FORMATS.forEach(p => fmtSel.add(new Option(p.name, p.id)));
+  const preset = () => [...PRESETS, ...saved].find(x => x.id === sel.value && x.id !== "custom");
+
+  // Sliders step through real camera stops; the value shown is the stop at the slider index
+  const getAp = () => apList[+$("ap-r").value];
+  const getSs = () => ssList[+$("ss-r").value];
+  const getIso = () => isoList[+$("iso-r").value];
+  const lightEv = () => curLight().ev;
+  // ISO needed for correct exposure at aperture N and shutter 1/ss s in light of EV100 L
+  const isoFor = (N, ss, L) => 100 * Math.pow(2, Math.log2(N * N * ss) - L);
+  // Stops of underexposure (negative = overexposed)
+  const underBy = (N, ss, iso, L) => Math.log2(N * N * ss) - Math.log2(iso / 100) - L;
+  const isoCeil = x => isoList.find(i => i >= x / 1.12) || isoList[isoList.length - 1];
+  const isoLimit = () => Math.min(+$("isocap").value || 640, isoList[isoList.length - 1]);
+  function nearestIdx(list, v) {
+    let bi = 0; list.forEach((x, i) => { if (Math.abs(Math.log(x / v)) < Math.abs(Math.log(list[bi] / v))) bi = i; });
+    return bi;
+  }
+  function fillSlider(id, list, cur, label) {
+    const r = $(id + "-r");
+    r.max = list.length - 1;
+    r.value = nearestIdx(list, cur);
+    $(id + "-scale").innerHTML = `<span>${label(list[0])}</span><span>${label(list[list.length - 1])}</span>`;
+  }
+  const curLens = () => { const p = preset(); return p && p.lenses ? p.lenses.find(l => l.mm === +$("lens").value) : null; };
+  // Fastest mechanical shutter the selected body/lens allows at aperture N
+  function shutterCap(N) {
+    const p = preset(), smax = +$("smax").value || 2000;
+    return p && p.wide && N < p.wide.below - 0.05 ? Math.min(smax, p.wide.smax) : smax;
+  }
+  const shuttersAt = N => SHUTTERS.filter(n => n <= shutterCap(N));
+  const aperturesFor = (fmax, fmin) => APERTURES.filter(n => n >= fmax - 0.05 && n <= fmin + 0.05);
+  function fillApertures() {
+    const cur = apList.length ? getAp() : defaults.ap;
+    apList = aperturesFor(+$("fmax").value, +$("fmin").value);
+    fillSlider("ap", apList, cur, n => `f/${n}`);
+  }
+  function fillShutters() {
+    const cur = ssList.length ? getSs() : defaults.ss;
+    const N = getAp();
+    ssList = shuttersAt(N);
+    fillSlider("ss", ssList, Math.min(cur, ssList[ssList.length - 1]), n => `1/${n}`);
+    const p = preset();
+    $("ssnote").textContent = p && p.wide && N < p.wide.below - 0.05
+      ? `At f/${N} the ${p.name} shutter is capped at 1/${p.wide.smax} s. DJI rates 1/${p.smax} s only at f/${p.wide.below} or narrower.`
+      : "";
+  }
+  function fillIsos() {
+    const cur = isoList.length ? getIso() : defaults.iso;
+    isoList = ISOS.filter(n => n >= (+$("isomin").value || 100) && n <= (+$("isomax").value || 6400));
+    if (!isoList.length) isoList = [100];
+    fillSlider("iso", isoList, cur, n => `${n}`);
+  }
+  function applyLens() {
+    const l = curLens();
+    if (l) { $("fmax").value = l.fmax; $("fmin").value = l.fmin; }
+    fillApertures(); fillShutters();
+  }
+  function syncFormat() {
+    const sw = +$("sw").value, sh = +$("sh").value;
+    const m = FORMATS.find(x => x.sw && Math.abs(x.sw - sw) < 0.5 && Math.abs(x.sh - sh) < 0.5);
+    fmtSel.value = m ? m.id : "custom";
+  }
+  function applyPreset() {
+    const p = preset();
+    const locked = !!p;
+    // Switching to Custom starts from the previous camera's specs, so a profile is easy to copy and adjust
+    if (!p && state.lastP) { const lp = state.lastP; $("mp").value = lp.mp; $("feq").value = lp.lenses ? Math.round(+$("lens").value * 43.27 / Math.hypot(lp.sw, lp.sh)) : lp.eq; }
+    state.lastP = p || null;
+    if (p) {
+      $("sw").value = p.sw; $("sh").value = p.sh; $("mi").value = p.mi; $("smax").value = p.smax; $("isomax").value = p.isoMax;
+      $("isomin").value = p.isoMin || 100;
+      $("stype").value = p.electronic ? "rolling" : p.global ? "global" : "mechanical";
+      if (!p.lenses) { $("fmax").value = p.fmax; $("fmin").value = p.fmin; }
+      syncFormat();
+    }
+    ["fmt", "sw", "sh", "fmax", "fmin", "smax", "isomax", "isomin", "stype", "mi"].forEach(id => $(id).disabled = locked);
+    fillIsos();
+    $("mp-l").hidden = $("feq-l").hidden = locked;
+    $("camsum").hidden = !locked;
+    $("lens-l").hidden = !(p && p.lenses);
+    if (p && p.lenses) {
+      // Keep the chosen lens when the same camera is refreshed (e.g. a lens was just added)
+      const lens = $("lens"), prev = state.lensFor === p.id ? (state.selectLens ?? lens.value) : null;
+      lens.innerHTML = "";
+      p.lenses.forEach(l => lens.add(new Option(l.name, l.mm)));
+      lens.value = prev != null && p.lenses.some(l => String(l.mm) === String(prev)) ? prev : p.fl;
+      state.lensFor = p.id; state.selectLens = null;
+    }
+    applyLens();
+    profUI();
+    $("wrap").classList.toggle("cam-locked", !!locked);   // phones hide fixed specs
+    $("camhint").textContent = locked
+      ? p.saved
+        ? "Saved profile: specs are locked. To change them, choose Custom camera, enter the new specs and save a new profile."
+        : (p.electronic
+        ? "This drone has an electronic (rolling) shutter only, so fast flight skews images. Specs are fixed to its main camera; choose Custom camera to enter your own."
+        : "Specs are fixed to this camera's main sensor. Choose Custom camera to enter your own.")
+      : "Enter the 35 mm-equivalent focal length from your camera's spec sheet. Sensor size is on the Advanced tab.";
+  }
+  function setMode(m) {
+    $("wrap").dataset.mode = m;
+    $("t-quick").setAttribute("aria-selected", m === "quick");
+    $("t-adv").setAttribute("aria-selected", m === "advanced");
+    try { localStorage.setItem("smc-mode", m); } catch (e) {}
+  }
+  // Flight sliders: [min, max, step] per unit system, and how each value is labelled
+  const FLIGHT = {
+    alt:    { metric: [1, 150, 1],    imperial: [3, 500, 1],   label: v => imp() ? `${v} ft` : `${v} m` },
+    spd:    { metric: [0.1, 20, 0.1], imperial: [0.2, 45, 0.1],   label: v => imp() ? `${fmt(v, 1)} mph` : `${fmt(v, 1)} m/s` },
+    fo:     { metric: [50, 90, 5],    imperial: [50, 90, 5],    label: v => `${v}%` },
+    so:     { metric: [40, 90, 5],    imperial: [40, 90, 5],    label: v => `${v}%` },
+    bl:     { metric: [0.2, 2, 0.1],  imperial: [0.2, 2, 0.1],  label: v => `${fmt(v, 1)} px` },
+    relief: { metric: [0, 50, 1],     imperial: [0, 160, 5],    label: v => imp() ? `${v} ft` : `${v} m` },
+    area:   { metric: [1, 1000, 1],   imperial: [2, 2500, 1],   label: v => imp() ? `${v} ac` : `${v} ha` },
+  };
+  // Typed values: the number box is the value the calculator uses; the slider mirrors it.
+  // Typed values may fall between slider steps or outside the slider's range, within these sanity limits.
+  const REC_MIN_SPD = 1;                                  // m/s: Recommend never suggests slower than this
+  const UNIT = { alt: ["m", "ft"], spd: ["m/s", "mph"], fo: ["%", "%"], so: ["%", "%"], bl: ["px", "px"], relief: ["m", "ft"], area: ["ha", "ac"] };
+  const LIMIT = {
+    alt:    { metric: [0.5, 1500],  imperial: [1.5, 5000] },
+    spd:    { metric: [0.1, 40],    imperial: [0.2, 90] },
+    fo:     { metric: [0, 95],      imperial: [0, 95] },
+    so:     { metric: [0, 95],      imperial: [0, 95] },
+    bl:     { metric: [0.05, 5],    imperial: [0.05, 5] },
+    relief: { metric: [0, 500],     imperial: [0, 1600] },
+    area:   { metric: [0.01, 100000], imperial: [0.03, 250000] },
+  };
+  function setFlightRanges() {
+    Object.entries(FLIGHT).forEach(([id, f]) => {
+      const [mn, mx, st] = f[state.units], el = $(id + "-r");
+      el.min = mn; el.max = mx; el.step = st;
+      const [lo, hi] = LIMIT[id][state.units];
+      $(id).min = lo; $(id).max = hi;
+      $(id + "-u").textContent = UNIT[id][imp() ? 1 : 0];
+      $(id + "-scale").innerHTML = `<span>${f.label(mn)}</span><span>${f.label(mx)}</span>`;
+    });
+  }
+  const lastGood = {};
+  function labelFlight() {
+    Object.keys(FLIGHT).forEach(id => {
+      const v = parseFloat($(id).value);
+      if (isFinite(v)) { lastGood[id] = v; $(id + "-r").value = v; }   // skip while the box is empty mid-typing
+    });
+  }
+  function setUnits(u) {
+    if (u === state.units) return;
+    const toImp = u === "imperial";
+    const conv = (x, k, d) => round(toImp ? x / k : x * k, d);
+    const next = { alt: conv(+$("alt").value, FT, 0), relief: conv(+$("relief").value, FT, 0), spd: conv(+$("spd").value, MPH, 1),
+      area: round(toImp ? +$("area").value * HA_AC : +$("area").value / HA_AC, 0) };
+    state.units = u;
+    setFlightRanges();
+    Object.entries(next).forEach(([id, v]) => $(id).value = v);
+    $("u-m").setAttribute("aria-pressed", !toImp); $("u-i").setAttribute("aria-pressed", toImp);
+    document.querySelectorAll("[data-u]").forEach(el => {
+      el.textContent = { len: toImp ? "ft" : "m", spd: toImp ? "mph" : "m/s", area: toImp ? "ac" : "ha" }[el.dataset.u];
+    });
+    calc();
+  }
+  const round = (x, d) => Math.round(x * 10 ** d) / 10 ** d;
+  const fmt = (x, d = 1) => isFinite(x) ? x.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d }) : "—";
+  const imp = () => state.units === "imperial";
+  const len = (m, d = 1) => !isFinite(m) ? "∞" : imp() ? `${fmt(m / FT, d)} ft` : `${fmt(m, d)} m`;
+  const spdS = (ms, d = 1) => imp() ? `${fmt(ms / MPH, d)} mph` : `${fmt(ms, d)} m/s`;
+  const gsdS = m => imp() ? [fmt(m / FT * 12, 2), "in/px"] : [fmt(m * 100, 2), "cm/px"];
+  const areaS = (m2, d = 1) => imp() ? `${fmt(m2 / 10000 * HA_AC, d)} ac` : `${fmt(m2 / 10000, d)} ha`;
+  const shutterS = t => t >= 1 ? `${fmt(t, 1)} s` : `1/${Math.round(1 / t).toLocaleString()} s`;
+  const timeS = s => { if (!isFinite(s)) return "—"; const m = Math.round(s / 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`; };
+
+  // Score: 100% at 0.25 px of edge blur or less, minus 4 points per 0.1 px. Stage follows the score.
+  const toScore = px => Math.max(0, Math.min(100, Math.round(100 - (px - 0.25) * 40)));
+  const stageOf = sc => STAGES.find(x => sc >= x.min);
+
+  // Edge-of-frame blur budget in pixels for a given aperture. Components add in quadrature.
+  function sharpness(N, c) {
+    const motion = c.blurPx;
+    const stops = Math.max(0, 2 * Math.log2(N / c.fmax));
+    const lens = 1.2 * Math.pow(0.75, stops);                                // aberrations: softest wide open, ease with every stop down
+    // Diffraction grows with f-number and matters more on small pixels; 0.7 × the Airy FWHM (green light) as effective blur
+    const diffraction = 0.7 * 1.03 * 0.00055 * N / c.pitch;
+    const s = c.alt * 1000, d = Math.max(c.alt - c.relief, c.alt * 0.1) * 1000; // focus on ground, tallest feature closer
+    const defocus = (c.f * c.f / (N * (s - c.f))) * ((s - d) / d) / c.pitch;
+    // Two sides of the score: lens sharpness (aperture-driven) and motion blur (speed/shutter-driven)
+    const lensBlur = Math.hypot(lens, diffraction, defocus);
+    const total = Math.hypot(lensBlur, motion);
+    return { motion, lens, diffraction, defocus, lensBlur, total, N,
+      stage: stageOf(toScore(total)), score: toScore(total), lensScore: toScore(lensBlur), motionScore: toScore(motion) };
+  }
+
+  function calc() {
+    const p = preset();
+    const sw = +$("sw").value, sh = +$("sh").value, diag = Math.hypot(sw, sh);
+    const mp = p ? p.mp : +$("mp").value;
+    // Lens values are real focal lengths; the 35 mm equivalent comes from the sensor diagonal
+    const eq = p ? (p.lenses ? Math.round(+$("lens").value * 43.27 / diag) : p.eq) : +$("feq").value;
+    if (!ssList.length) return;
+    const f = p ? (p.lenses ? +$("lens").value : p.fl) : eq * diag / 43.27;
+    const fmax = +$("fmax").value, mi = +$("mi").value, N = getAp();
+    const ss = getSs(), iso = getIso(), L = lightEv();
+    const isoQ = iso <= Math.max(200, isoList[0]) ? ["good", "optimal"] : iso < 800 ? ["good", "low grain"] : iso <= 1600 ? ["warn", "grainy"] : ["bad", "very grainy"];
+    $("isov").innerHTML = `${iso.toLocaleString()}<span class="isoq ${isoQ[0]}">${isoQ[1]}</span>`;
+    $("apv").textContent = `f/${N}`;
+    $("ssv").textContent = `1/${ss.toLocaleString()} s`;
+    labelFlight();
+    $("light-v").innerHTML = `${curLight().name}<small>EV ${measuredEv !== null ? fmt(measuredEv, 1) : curLight().ev}</small>`;
+    const altIn = +$("alt").value, spdIn = +$("spd").value, areaIn = +$("area").value, reliefIn = +$("relief").value;
+    const alt = imp() ? altIn * FT : altIn;
+    const v = imp() ? spdIn * MPH : spdIn;
+    const relief = imp() ? reliefIn * FT : reliefIn;
+    const areaM2 = (imp() ? areaIn / HA_AC : areaIn) * 10000;
+    const fo = +$("fo").value / 100, so = +$("so").value / 100, bl = +$("bl").value;
+    const longAcross = $("orient").value === "across";
+    if (!(sw > 0 && sh > 0 && mp > 0 && f > 0 && alt > 0 && v > 0 && ss > 0 && N > 0)) return;
+
+    if (p) $("camsum").innerHTML = `<b>${mp} MP @ ${eq} mm</b>${infoBtn("camsum", "resolution and focal length")}<span>35 mm equivalent · ${+$("fmin").value === fmax ? `f/${fmax} fixed` : `f/${fmax}–f/${$("fmin").value}`} · ${p.electronic ? "electronic shutter" : p.global ? "global shutter" : "mechanical"} to 1/${p.smax.toLocaleString()} s · ISO ${isoList[0].toLocaleString()}–${p.isoMax.toLocaleString()}</span>`;
+
+    const aspect = sw / sh;
+    const nw = Math.sqrt(mp * 1e6 * aspect), nh = nw / aspect;
+    const pitch = sw / nw;
+    const gsd = alt * pitch / f;
+    const fpW = alt * sw / f, fpH = alt * sh / f;
+    const across = longAcross ? fpW : fpH, along = longAcross ? fpH : fpW;
+
+    const t = 1 / ss;
+    const blurPx = v * t / gsd;
+    const photoSpacing = along * (1 - fo);
+    const lineSpacing = across * (1 - so);
+    const interval = photoSpacing / v;
+    const maxSpdInterval = photoSpacing / mi;
+    const maxSpdBlur = bl * gsd / t;
+    const slowestShutter = bl * gsd / v;
+    const maxSpd = Math.min(maxSpdInterval, maxSpdBlur);
+    const rate = lineSpacing * v;
+    const photosPerHa = 10000 / (photoSpacing * lineSpacing);
+    const flightS = areaM2 / rate * 1.2;
+    const photos = Math.ceil(areaM2 / (photoSpacing * lineSpacing) * 1.1);
+    const dataGB = photos * mp * 0.6 / 1000;
+    const minAltBlur = v * t * f / (bl * pitch);
+
+    // ---- Motion-blur safeguard
+    const [gNow, gNowU] = gsdS(gsd);
+    const lvl = blurPx <= bl ? "good" : blurPx <= bl * 2 ? "warn" : "bad";
+    const guard = $("guard");
+    guard.className = "guard " + lvl;
+    const cause = `${eq} mm at ${len(alt, 0)} gives ${gNow} ${gNowU}. At ${spdS(v)} and ${shutterS(t)} the drone moves ${len(v * t, 3)} during exposure: <b>${fmt(blurPx, 2)} px</b> of blur (limit ${bl} px).`;
+    if (lvl === "good") {
+      guard.innerHTML = `<div class="gh">Motion blur safe <span>${fmt(blurPx, 2)} / ${bl} px</span></div>
+        <p>${cause}</p>
+        <p>Stays safe up to <b>${spdS(maxSpdBlur)}</b> at this altitude, or down to <b>${len(minAltBlur, 0)}</b> AGL at this speed.</p>`;
+    } else {
+      const fixes = [
+        `Slow to <b>${spdS(maxSpdBlur)}</b> or less`,
+        1 / slowestShutter <= shutterCap(N)
+          ? `Use a shutter of <b>${shutterS(slowestShutter)}</b> or faster`
+          : null,
+        `Climb to <b>${len(minAltBlur, 0)}</b> AGL or higher${minAltBlur > 121.92 ? " (above the 120 m / 400 ft limit)" : ""}`,
+      ].filter(Boolean);
+      if (p && p.lenses) {
+        const ok = p.lenses.filter(l => l.mm < f && v * t / (alt * pitch / l.mm) <= bl);
+        if (ok.length) fixes.push(`Fit the <b>${ok[ok.length - 1].mm} mm</b> lens`);
+      }
+      guard.innerHTML = `<div class="gh">${lvl === "bad" ? "No-go: motion blur" : "Motion blur warning"} <span>${fmt(blurPx, 2)} / ${bl} px</span></div>
+        <p>${cause}</p>
+        <p>Any one of these fixes it:</p><ul>${fixes.map(x => `<li>${x}</li>`).join("")}</ul>`;
+    }
+    $("althint").textContent = `Blur-safe at ${len(minAltBlur, 0)} or higher`;
+    $("althint").className = "fhint" + (alt < minAltBlur ? " bad" : "");
+    $("spdhint").textContent = `Blur-safe up to ${spdS(maxSpdBlur)}`;
+    $("spdhint").className = "fhint" + (v > maxSpdBlur ? " bad" : "");
+
+    // ---- Sharpness
+    const cam = { blurPx, pitch, fmax, f, alt, relief };
+    const sh0 = sharpness(N, cam);
+    const exposable = apList.filter(n => isoFor(n, ss, L) <= isoLimit() * 1.12);
+    const best = (exposable.length ? exposable : [apList[0]]).map(n => sharpness(n, cam)).reduce((a, b) => b.total < a.total ? b : a);
+    last = { cam, gsd, v, bl, maxSpdInterval, alt, L };
+
+    // ---- Exposure
+    const under = underBy(N, ss, iso, L), need = isoFor(N, ss, L);
+    const lightName = curLight().name.toLowerCase();
+    const expLvl = Math.abs(under) <= 0.5 ? "good" : Math.abs(under) <= 1 ? "warn" : "bad";
+    const stopsS = x => `${fmt(Math.abs(x), 1)} stop${Math.abs(x) >= 0.95 && Math.abs(x) < 1.05 ? "" : "s"}`;
+    let expMsg, expFix = "";
+    if (expLvl === "good") expMsg = `Exposure correct for ${lightName}`;
+    else if (under > 0) {
+      expMsg = `Underexposed by ${stopsS(under)}`;
+      const nIso = isoCeil(need);
+      expFix = need <= isoList[isoList.length - 1] * 1.12 ? `Raise ISO to ${nIso.toLocaleString()}${nIso > isoLimit() ? " (above your max ISO, expect noise)" : ""}, or open the aperture.` : `Not enough light: open the aperture, slow the shutter and fly slower.`;
+    } else {
+      expMsg = `Overexposed by ${stopsS(under)}`;
+      expFix = iso > isoList[0] ? `Lower ISO to ${isoCeil(Math.max(isoList[0], need)).toLocaleString()}, or stop down.` : `Stop down or use a faster shutter.`;
+    }
+    $("expo").innerHTML = `<span class="pill ${expLvl}">${expMsg}</span>${expFix ? `<span class="fhint">${expFix}</span>` : ""}${iso >= 800 ? `<span class="fhint">ISO ${iso.toLocaleString()} adds visible grain that hides fine ground detail. Aim for the lowest ISO: open the aperture or use a slower shutter within the blur limit.</span>` : ""}`;
+    const st = sh0.stage;
+    $("dn").setAttribute("stroke-dasharray", `${(sh0.score / 100 * 263.9).toFixed(1)} 264`);
+    $("dn").setAttribute("stroke", `var(--${st.key})`);
+    $("dnt").textContent = `${sh0.score}%`;
+    $("shstage").textContent = st.label;
+    $("shstage").style.background = `var(--${st.key})`;
+    $("shstage").style.color = `var(--${st.key}-fg)`;
+    $("shtext").textContent = st.text;
+    $("fs-ring").setAttribute("stroke-dasharray", `${(sh0.score / 100 * 251.3).toFixed(1)} 252`);
+    $("fs-ring").setAttribute("stroke", `var(--${st.key})`);
+    $("fs-v").textContent = `${sh0.score}%`;
+    // Recommend only when sharpness drops below 70% or exposure is off
+    const recOff = sh0.score >= 70 && expLvl === "good";
+    $("rec").disabled = recOff;
+    $("recnote").textContent = recOff ? "Available when sharpness drops below 70% or exposure is off." : "";
+    $("fs-gsd").innerHTML = `${gNow}<small>${gNowU}</small>`;
+    $("fs-blur").innerHTML = `${fmt(blurPx, 2)}<small>px</small>`;
+    $("fs-blur").className = blurPx <= bl ? "" : blurPx <= bl * 2 ? "warn" : "bad";
+    $("fs-l").textContent = st.label;
+    $("fs-l").style.background = `var(--${st.key})`; $("fs-l").style.color = `var(--${st.key}-fg)`;
+    const weakSide = sh0.lensScore <= sh0.motionScore ? "lens" : "motion";
+    $("pair").innerHTML = [["Lens sharpness", sh0.lensScore, "lens"], ["Motion sharpness", sh0.motionScore, "motion"]].map(([k, sc, id]) =>
+      `<span class="${id === weakSide ? "weak" : ""}">${k}</span><div class="bar"><i style="width:${sc}%;background:var(--${stageOf(sc).key})"></i></div><span class="val">${sc}%</span>`).join("");
+    const parts = [
+      ["Motion", sh0.motion, "Slow down or use a faster shutter."],
+      ["Lens edges", sh0.lens, "Stop down (higher f-number) for sharper edges."],
+      ["Diffraction", sh0.diffraction, "Open up (lower f-number): at this pixel size, small apertures blur the image."],
+      ["Depth of field", sh0.defocus, "Stop down, fly higher or use a shorter lens to keep raised features in focus."],
+    ];
+    const worst = parts.reduce((a, b) => b[1] > a[1] ? b : a);
+    $("contrib").innerHTML = parts.map(([k, x]) =>
+      `<span class="${k === worst[0] ? "top" : ""}">${k}</span><div class="bar"><i style="width:${Math.min(100, x / 2 * 100)}%;background:var(--${stageOf(toScore(x)).key})"></i></div><span class="val">${fmt(x, 2)} px</span>`).join("");
+    const tips = [`Total edge blur about <b>${fmt(sh0.total, 2)} px</b>. Biggest factor: ${worst[0].toLowerCase()}. ${worst[2]}`];
+    if (best.N !== N && best.score > sh0.score)
+      tips.push(`Sharpest aperture that still exposes correctly at ${shutterS(t)} and up to ISO ${isoLimit().toLocaleString()}: <b>f/${best.N}</b> (${best.score}%).`);
+    else tips.push(`f/${N} is the sharpest aperture that exposes correctly at these settings.`);
+    $("shtip").innerHTML = tips.join(" ");
+
+    // DoF table (circle of confusion = 2 px)
+    const cc = 2 * pitch, fl = f, s = alt * 1000;
+    const H = fl * fl / (N * cc) + fl;
+    const near = s * (H - fl) / (H + s - 2 * fl) / 1000;
+    const far = H > s ? s * (H - fl) / (H - s) / 1000 : Infinity;
+    const row = (k, v2, note) => `<tr><td>${k}</td><td>${v2}${note ? `<span class="note">${note}</span>` : ""}</td></tr>`;
+    $("dof").innerHTML = [
+      row("Focus distance", len(alt, 0), "focused on the ground"),
+      row("Sharp from", `${len(near, 1)} to ${len(far, 1)}`),
+      row("Hyperfocal distance", len(H / 1000, 1), alt >= H / 1000 ? "beyond it: everything to infinity is sharp" : "flying below it"),
+      row("Sharp depth above ground", len(alt - near, 1), alt - near >= relief ? `covers ${len(relief, 0)} height variation` : `less than ${len(relief, 0)} height variation`),
+    ].join("");
+
+    // ---- Status pills
+    const checks = [];
+    checks.push(blurPx <= bl ? ["good", `Blur ${fmt(blurPx, 2)} px — within limit`]
+      : blurPx <= bl * 2 ? ["warn", `Blur ${fmt(blurPx, 2)} px — over ${bl} px limit`]
+      : ["bad", `Blur ${fmt(blurPx, 2)} px — NO-GO`]);
+    checks.push([st.key === "s5" || st.key === "s4" ? "good" : st.key === "s3" ? "warn" : "bad", `Sharpness ${st.label.toLowerCase()} (${sh0.score}%)`]);
+    checks.push([expLvl, expMsg]);
+    if (iso >= 800) checks.push([iso > 1600 ? "bad" : "warn", `ISO ${iso.toLocaleString()} — visible grain`]);
+    checks.push(interval >= mi ? ["good", `Trigger every ${fmt(interval, 2)} s — camera keeps up`]
+      : ["bad", `Needs ${fmt(interval, 2)} s interval — camera min is ${mi} s`]);
+    if (alt > 121.92) checks.push(["warn", `Altitude above 120 m / 400 ft AGL`]);
+    const rolling = p ? !!p.electronic : $("stype").value === "rolling";
+    if (rolling) checks.push(["warn", "Electronic shutter — rolling-shutter distortion"]);
+    $("status").innerHTML = checks.map(([c, s2]) => `<span class="pill ${c}">${s2}</span>`).join("");
+
+    // ---- Headline numbers
+    $("big").innerHTML = [
+      ["GSD", `${gNow}<small>${gNowU}</small>`, `footprint ${len(across, 0)} × ${len(along, 0)}`],
+      ["Motion blur", `${fmt(blurPx, 2)}<small>px</small>`, `at ${shutterS(t)}`],
+      ["Trigger interval", `${fmt(interval, 2)}<small>s</small>`, `every ${len(photoSpacing)}`],
+      ["Max safe speed", `${imp() ? fmt(maxSpd / MPH, 1) : fmt(maxSpd, 1)}<small>${imp() ? "mph" : "m/s"}</small>`, maxSpdBlur < maxSpdInterval ? "limited by blur" : "limited by interval"],
+    ].map(([k, v2, s2]) => `<div><div class="k">${k}</div><div class="v">${v2}</div><div class="s">${s2}</div></div>`).join("");
+
+    // ---- DJI Pilot 2 settings (Mapping mission), from the current calculator values
+    const warnings = [];
+    if (lvl !== "good") warnings.push("motion blur");
+    if (expLvl !== "good") warnings.push("exposure");
+    if (interval < mi) warnings.push("trigger interval");
+    if (st.min < 70) warnings.push("sharpness");
+    $("pilotwarn").hidden = !warnings.length;
+    $("pilotwarn").textContent = warnings.length ? `Fix ${warnings.join(", ")} before entering these settings.` : "";
+    const terrain = relief > alt * 0.1;
+    const lensObj = curLens();
+    // Rows: [setting, value, note, show] — show: "both", "adv" (Advanced only) or "quick" (Quick only)
+    const pilotRoute = [
+      ["Mission type", "Mapping (2D, ortho)", "", "adv"],
+      ["Payload", p ? `${p.payload}${lensObj ? `, ${lensObj.mm} mm lens` : ""}` : "Custom camera", "", p && p.lenses ? "both" : "adv"],
+      ["Altitude mode", terrain ? "Terrain follow (import a DSM)" : "Relative to takeoff point (ALT)", terrain ? `height variation ${len(relief, 0)} is over 10% of altitude` : "", terrain ? "both" : "adv"],
+      ["Route altitude", len(alt, 0), `Pilot 2 should show GSD ≈ ${gNow} ${gNowU}`, "both"],
+      ["Route speed", spdS(v), "", "both"],
+      ["Overlap (front / side)", `${Math.round(fo * 100)}% / ${Math.round(so * 100)}%`, "", "quick"],
+      ["Side overlap", `${Math.round(so * 100)}%`, "", "adv"],
+      ["Frontal overlap", `${Math.round(fo * 100)}%`, "", "adv"],
+      ["Course angle", "Along the longest side of the area", "", "adv"],
+      ["Margin", "0 m", "", "adv"],
+      ["Photo mode", "Distance interval shot", `≈ every ${len(photoSpacing)}`, "adv"],
+      ["Finish action", "Return to home", "", "adv"],
+    ];
+    const pilotCam = [
+      ["Exposure mode", "M (manual)", "steady light; use S in changing light", "adv"],
+      ["Shutter", `1/${ss.toLocaleString()} s`, "", "both"],
+      ["Aperture", `f/${N}`, "", "both"],
+      ["ISO", iso.toLocaleString(), "in S mode, set Auto ISO with this as the max", "both"],
+      p && p.mechToggle ? ["Mechanical shutter", "On", "", "both"] : null,
+      ["Image format", "JPEG", "", "adv"],
+      ["Dewarping", "Off", "let your processing software calibrate the lens", "adv"],
+      p && p.p1 ? ["Focus", "First waypoint autofocus", "or calibrated infinity focus", "adv"] : null,
+      ["Gimbal pitch", "−90° (nadir)", "custom camera angle off", "adv"],
+      p && p.elevOpt ? ["Elevation optimization", "On", "", "adv"] : null,
+    ].filter(Boolean);
+    const prow = ([k, v2, n, show]) => `<tr class="${show === "adv" ? "adv" : show === "quick" ? "quick-only" : ""}"><td>${k}</td><td>${v2}${n ? `<span class="note">${n}</span>` : ""}</td></tr>`;
+    $("p-route").innerHTML = pilotRoute.map(prow).join("");
+    $("p-cam").innerHTML = pilotCam.map(prow).join("");
+    $("pilot-title").textContent = p && (p.app || p.saved) ? "Mission settings" : "DJI Pilot 2 settings";
+    $("pilotnote").textContent = p && p.saved
+      ? `Saved profile: enter these values in the flight app you use with the ${p.name}.`
+      : p && p.app
+      ? `DJI Pilot 2 doesn't support the ${p.name}; it flies with ${p.app}. Plan the grid with a mapping app that supports this drone and enter these values there.`
+      : p
+      ? "Labels follow DJI Pilot 2's Mapping mission screens; menu names can differ slightly between firmware versions."
+      : "Custom camera: use these as reference values if your app has equivalent settings.";
+    state.pilotRows = { route: pilotRoute, cam: pilotCam };
+
+    // ---- Advanced panels
+    const tone = (x, a, b) => x <= a ? "var(--good)" : x <= b ? "var(--warn)" : "var(--bad)";
+    $("blurv").innerHTML = `${fmt(blurPx, 2)}<small>px</small>`;
+    $("blurs").textContent = `${len(v * t, 3)} ground travel at ${shutterS(t)}`;
+    $("blurbar").style.width = Math.min(100, blurPx / 2 * 100) + "%";
+    $("blurbar").style.background = tone(blurPx, bl, bl * 2);
+
+    $("geo").innerHTML = [
+      row("Footprint across track", len(across)),
+      row("Footprint along track", len(along)),
+      row("Image area", areaS(across * along, 2)),
+      row("Photo spacing", len(photoSpacing)),
+      row("Line spacing", len(lineSpacing), `${Math.round(so * 100)}% side overlap`),
+      row("Image size", `${Math.round(nw).toLocaleString()} × ${Math.round(nh).toLocaleString()} px`),
+      row("Pixel pitch", `${fmt(pitch * 1000, 2)} µm`),
+      row("Actual focal length", `${fmt(f, 1)} mm`, `${eq} mm equivalent`),
+    ].join("");
+    $("lim").innerHTML = [
+      row("Slowest shutter for blur limit", shutterS(slowestShutter)),
+      row("Max speed — blur", spdS(maxSpdBlur)),
+      row("Max speed — capture interval", spdS(maxSpdInterval)),
+      row("Coverage rate", imp() ? `${fmt(rate * 3600 / 10000 * HA_AC, 0)} ac/h` : `${fmt(rate * 3600 / 10000, 0)} ha/h`, "straight lines, no turns"),
+      row("Area flight time", timeS(flightS), `${areaS(areaM2, 0)} incl. 20% turns`),
+      row("Photos / data", `${photos.toLocaleString()} · ${fmt(dataGB, 1)} GB`, `${fmt(photosPerHa * (imp() ? 1 / HA_AC : 1), 1)} per ${imp() ? "acre" : "ha"}`),
+    ].join("");
+    $("assume").innerHTML = `Using ${Math.round(fo * 100)}/${Math.round(so * 100)}% overlap, a ${bl} px blur limit and ${len(relief, 0)} height variation. <button type="button" data-go="advanced">Change in Advanced</button>`;
+
+    // ---- Site estimate (rough reference sizes; lines flown along the long side)
+    const site = SITES[state.site];
+    $("site-out").hidden = !site;
+    if (site) {
+      // Like a mapping app's grid: lines at each line spacing across the full width (both edges included),
+      // photos at each photo spacing along the full length, so every point gets front and side overlap
+      const lines = Math.ceil(site.w / lineSpacing) + 1;
+      const shotsPerLine = Math.ceil(site.l / photoSpacing) + 1;
+      const shots = lines * shotsPerLine;
+      const dist = lines * site.l + (lines - 1) * lineSpacing;
+      const secs = dist / v + (lines - 1) * TURN_S;
+      $("site-rows").innerHTML = [
+        row("Site size", `${len(site.l, 0)} × ${len(site.w, 0)}`, site.note),
+        row("Flight lines", `${lines}`, `${len(lineSpacing, 1)} apart, flown along the long side`),
+        row("Photos", shots.toLocaleString(), `${shotsPerLine} per line`),
+        row("Trigger interval", `${fmt(interval, 1)} s`, `every ${len(photoSpacing, 1)}${interval < mi ? ` · faster than the camera's ${mi} s minimum` : ""}`),
+        row("Flight time", secs < 60 ? `${Math.round(secs)} s` : secs < 600 ? `${Math.floor(secs / 60)} min ${Math.round(secs % 60)} s` : timeS(secs), "photo lines and turns; excludes takeoff, transit and landing"),
+        row("Distance flown", len(dist, 0)),
+      ].join("");
+    }
+
+    drawSchematic(across, along, photoSpacing, lineSpacing);
+    $("schemlbl").textContent = `${len(across, 0)} × ${len(along, 0)} per frame`;
+
+    // ---- Recommendations
+    const adv = [];
+    if (interval < mi) adv.push(`At ${Math.round(fo * 100)}% front overlap the camera can't fire fast enough. Slow to ${spdS(maxSpdInterval)}, climb, or lower front overlap.`);
+    if (expLvl !== "good") adv.push(`${expMsg}. ${expFix}`);
+    if (rolling) adv.push(`${p ? "The " + p.name : "This camera"} has no mechanical shutter. Its rolling shutter skews images as the drone moves, which reduces mapping accuracy. Fly slower than usual, and turn on rolling-shutter correction in your processing software (for example Pix4D, Agisoft Metashape or DJI Terra).`);
+    if (iso >= 800) adv.push(`ISO ${iso.toLocaleString()} adds grain. Lowest ISO gives the cleanest orthomosaic; keep it below 800 by opening the aperture or using a slower shutter within the blur limit.`);
+    if (sh0.score < 70) adv.push(`Sharpness is ${st.label.toLowerCase()}. ${worst[2]}`);
+    if (N < 5.6 - 0.05 && apList.includes(5.6) && isoFor(5.6, ss, L) <= 400 * 1.12 && sharpness(5.6, cam).total < sh0.total)
+      adv.push(`Stop down to f/5.6 for sharper edges; at ${shutterS(t)} it still exposes correctly in ${lightName} at ISO ${isoCeil(Math.max(isoList[0], isoFor(5.6, ss, L))).toLocaleString()}.`);
+    if (fo < 0.7 || so < 0.6) adv.push(`Overlap is on the low side for an orthomosaic. 75–80% front and 65–70% side is a common starting point; go higher over crops, vegetation or uniform surfaces.`);
+    if (alt > 121.92) adv.push(`Above 120 m / 400 ft AGL needs a waiver or authorisation in most jurisdictions.`);
+    if (!adv.length && blurPx <= bl) adv.push(`Settings are inside all limits. You have ${fmt((1 - v / maxSpd) * 100, 0)}% speed headroom before the first limit.`);
+    if (!adv.length) adv.push(`Fix the motion blur shown at the top before flying.`);
+    if (adv.length === 1 && adv[0].startsWith("Settings are inside")) adv[0] = adv[0].replace("all limits", "all limits and exposure is correct");
+    $("advice").innerHTML = adv.map(a => `<li>${a}</li>`).join("");
+  }
+
+  // Recommended settings for the current altitude and light.
+  // Preferred: the fastest shutter that exposes correctly at f/5.6 or narrower and ISO 400 or below,
+  // with motion blur at 80% of the limit or less (gust headroom); lowest ISO that exposes it.
+  // The drone is slowed if blur needs it. Only when even the slowest speed can't work within those limits
+  // does it relax to wider apertures / ISO up to the max-ISO setting.
+  const PREF_APERTURE = 5.6, PREF_ISO = 400;
+  // Reference site sizes (metres): broad averages, not standards for any particular venue
+  const SITES = {
+    soccer: { l: 105, w: 68,  note: "FIFA-recommended pitch, 105 × 68 m" },
+    oval:   { l: 177, w: 95,  note: "400 m running track and infield, about 177 × 95 m" },
+    golf:   { l: 370, w: 60,  note: "average par 4: about 370 m tee to green, 60 m-wide corridor" },
+  };
+  const TURN_S = 6;   // rough seconds per line turn for a mapping drone
+  const prefApOf = () => Math.min(PREF_APERTURE, apList[apList.length - 1]);
+  function recommend() {
+    calc();
+    if (!last) return;
+    const { cam, gsd, bl, maxSpdInterval, alt, L } = last;
+    const v0 = Math.min(last.v, maxSpdInterval);
+    const target = bl * 0.8, cap = isoLimit();
+    const prefIso = Math.min(PREF_ISO, cap);
+    const prefAp = Math.min(PREF_APERTURE, apList[apList.length - 1]);     // e.g. Mini 3 is fixed at f/1.7
+    const vMinRec = REC_MIN_SPD;
+    const preferred = [];
+    apList.filter(N => N >= prefAp - 0.05).forEach(N => {
+      const exp = shuttersAt(N).filter(s => isoFor(N, s, L) <= prefIso * 1.12 && isoFor(N, s, L) >= isoList[0] / 1.12);
+      if (!exp.length) return;
+      const ss = exp[exp.length - 1];                                          // fastest shutter the light allows
+      const v = Math.min(v0, target * gsd * ss);                               // slow the drone if blur needs it
+      const iso = Math.max(isoList[0], isoCeil(isoFor(N, ss, L)));
+      preferred.push({ N, ss, v, iso, sh: sharpness(N, { ...cam, blurPx: v / ss / gsd }) });
+    });
+    if (preferred.length) {
+      // Fastest shutter wins; then higher speed; then lower ISO; then sharper
+      const pick = preferred.reduce((a, b) => b.ss > a.ss || (b.ss === a.ss && (b.v > a.v + 1e-6 || (Math.abs(b.v - a.v) < 1e-6 && (b.iso < a.iso || (b.iso === a.iso && b.sh.total < a.sh.total))))) ? b : a);
+      // Only relax aperture/ISO when keeping them would need a speed below the slider's minimum
+      if (pick.v >= vMinRec - 1e-6) return applyRec(pick, false);
+    }
+    const combos = [];
+    apList.forEach(N => {
+      const list = shuttersAt(N);
+      const okExp = list.filter(s => isoFor(N, s, L) <= cap * 1.12);        // shutters exposable at or below max ISO
+      if (!okExp.length) return;
+      let ss = list.find(s => v0 / s / gsd <= target), v = v0;
+      if (!ss || !okExp.includes(ss)) {                                       // blur or light forces a slower shutter
+        ss = okExp[okExp.length - 1];
+        v = Math.min(v0, target * gsd * ss);
+      }
+      // In bright light, speed the shutter up rather than go below ISO 100
+      while (isoFor(N, ss, L) < isoList[0] / 1.12 && list.indexOf(ss) < list.length - 1) ss = list[list.indexOf(ss) + 1];
+      const iso = Math.max(isoList[0], isoCeil(isoFor(N, ss, L)));
+      combos.push({ N, ss, v, iso, sh: sharpness(N, { ...cam, blurPx: v / ss / gsd }) });
+    });
+    if (!combos.length) {
+      $("rectext").innerHTML = `Too dark for this camera at ISO ${cap.toLocaleString()} or below. Raise the max ISO on the Advanced tab or wait for better light.`;
+      return;
+    }
+    const keep = combos.filter(c => c.v >= v0 - 1e-6);
+    // Noise cost: 3 score points per stop of ISO above 100, so a small sharpness gain doesn't buy a lot of ISO
+    // (uses unclamped blur, 40 points per px, so it still ranks options when every score is 0%)
+    const worth = c => -c.sh.total * 40 - 3 * Math.log2(c.iso / 100);
+    const better = (a, b) => keep.length
+      ? (worth(b) > worth(a) + 1e-9 || (Math.abs(worth(b) - worth(a)) < 1e-9 && b.iso < a.iso) ? b : a)
+      : (b.v > a.v + 1e-6 || (Math.abs(b.v - a.v) < 1e-6 && b.sh.total < a.sh.total) ? b : a);
+    applyRec((keep.length ? keep : combos).reduce(better), true);
+  }
+  function applyRec(pick, relaxed) {
+    const { cam, bl, alt } = last;
+    let { N: ap, ss, v, iso } = pick, slowed = false;
+    // Slowest speed Recommend will suggest, in m/s (the slider itself goes lower)
+    const vMin = REC_MIN_SPD;
+    const tooLow = v < vMin - 1e-6;
+    if (tooLow) { v = vMin; slowed = v < last.v - 0.01; }
+    else if (v < last.v - 0.01) { v = Math.max(vMin, Math.floor((imp() ? v / MPH : v) * 2) / 2 * (imp() ? MPH : 1)); slowed = true; }
+    $("ap-r").value = apList.indexOf(ap);
+    fillShutters();
+    $("ss-r").value = ssList.indexOf(ss);
+    $("iso-r").value = isoList.indexOf(iso);
+    if (slowed) $("spd").value = imp() ? round(v / MPH, 1) : v;
+    calc();
+    const lightName = curLight().name.toLowerCase();
+    // Lowest altitude where the slowest speed and fastest shutter stay within the blur limit
+    const altOk = vMin * (1 / ss) * cam.f / (bl * cam.pitch);
+    $("rectext").innerHTML = `Set for ${len(alt, 0)} in ${lightName}: <b>f/${ap}</b>, <b>1/${ss.toLocaleString()} s</b>, <b>ISO ${iso.toLocaleString()}</b>${slowed ? `, speed reduced to <b>${spdS(v)}</b>` : ""}.`
+      + (relaxed && (ap < prefApOf() - 0.05 || iso > PREF_ISO) ? ` Not enough light for f/${prefApOf()} at ISO ${PREF_ISO} or below, so ${[ap < prefApOf() - 0.05 ? "the aperture was opened" : "", iso > PREF_ISO ? "ISO was raised" : ""].filter(Boolean).join(" and ")}.` : "")
+      + (tooLow ? ` Even at the slowest speed, motion blur stays over the limit at this height. Fly at <b>${len(Math.ceil(altOk), 0)}</b> or higher.` : "");
+  }
+
+  function drawSchematic(across, along, ps, ls) {
+    const svg = $("schem"), W = 640, H = 230, pad = 24;
+    const totalW = along + 2 * ps, totalH = across + ls;
+    const k = Math.min((W - 2 * pad - 60) / totalW, (H - 2 * pad) / totalH);
+    const ox = pad + 40, oy = pad + (H - 2 * pad - totalH * k) / 2;
+    let s = "";
+    for (let line = 0; line < 2; line++) for (let i = 0; i < 3; i++) {
+      const x = ox + i * ps * k, y = oy + line * ls * k;
+      s += `<rect x="${x}" y="${y}" width="${along * k}" height="${across * k}" fill="${line ? "var(--fp-b)" : "var(--fp-a)"}" stroke="${line ? "var(--muted)" : "var(--accent)"}" stroke-width="1"/>`;
+    }
+    const ax = ox + (along + 2 * ps) * k + 8;
+    s += `<line x1="${ox}" y1="${H - 8}" x2="${ox + ps * k}" y2="${H - 8}" stroke="var(--accent)" stroke-width="2"/>`;
+    s += `<text x="${ox + ps * k + 6}" y="${H - 4}">photo spacing</text>`;
+    s += `<line x1="${pad + 10}" y1="${oy}" x2="${pad + 10}" y2="${oy + ls * k}" stroke="var(--accent)" stroke-width="2"/>`;
+    s += `<text x="${pad + 2}" y="${oy - 6}">line</text>`;
+    s += `<text x="${Math.min(ax, W - 60)}" y="${oy + 12}">→ flight</text>`;
+    svg.innerHTML = s;
+  }
+
+  // ---- Quick-knowledge tips for camera terms
+  const TIPS = {
+    alt: "<b>Altitude AGL</b> is the drone's height above ground level. <b>Higher</b> gives a coarser GSD (less detail per pixel) but each photo covers more ground, so fewer photos, fewer lines, a shorter flight and less motion blur. <b>Lower</b> gives finer detail but more photos and flight time. In Australia, standard operating conditions cap you at 120 m AGL unless CASA has approved otherwise.",
+    spd: "<b>Flight speed</b> is how fast the drone flies along each mapping line. <b>Faster</b> covers the site sooner but increases motion blur and needs photos taken closer together in time. <b>Slower</b> gives sharper photos but a longer flight and more battery use.",
+    fo: "<b>Front overlap</b> is how much each photo overlaps the next one along the flight line. <b>Higher</b> overlap gives the mapping software more matches, but means more photos and a shorter time between shots. 75–80% is typical for orthomosaics.",
+    so: "<b>Side overlap</b> is how much neighbouring flight lines overlap. <b>Higher</b> overlap means lines closer together, so more lines and a longer flight. 65–70% is typical for orthomosaics; raise it over trees, water or low-texture ground.",
+    bl: "<b>Blur limit</b> is the most motion blur you'll accept, in pixels. The safety checks and Recommend use it. <b>0.5 px</b> is strict and gives crisp detail; <b>1 px</b> is acceptable for general mapping; above that, fine detail smears.",
+    relief: "<b>Height variation</b> is the difference between the lowest and highest ground or objects in the site (slopes, buildings, trees). It sets how much depth of field you need. A flat sports ground is 1–2 m; hilly or built-up sites can be 20 m or more.",
+    area: "<b>Survey area</b> is the size of the site in hectares (1 ha = 100 × 100 m). It's used to estimate the number of photos, flight lines and flight time.",
+    site: "Pick a <b>typical site</b> to see rough line counts, photo counts and flight time for a soccer pitch, athletics oval or par 4 golf hole at your current settings. Averages only; real sites vary.",
+    preset: "Choose your <b>drone or payload</b>. Presets fill in the sensor, lens, aperture range, fastest shutter, ISO range and photo interval. Choose <b>Custom camera</b> to enter your own, or pick a <b>saved profile</b>.",
+    sensor: "The physical <b>width and height of the camera sensor</b> in millimetres, from the spec sheet. With the megapixels it sets the pixel size, which drives GSD, diffraction and how much light each pixel collects.",
+    isomin: "The camera's <b>lowest (base) ISO</b>. This is the cleanest setting, with the least grain. Recommend starts here and only raises ISO when the light needs it.",
+    prof: "Save the current camera settings as a <b>named profile</b> so you and your team can pick it from the Drone / payload list later. Profiles are shared with everyone who uses this calculator.",
+    addlens: "Add another <b>lens</b> to this profile: enter its real focal length (as printed on the lens, not the 35 mm equivalent) and its widest and narrowest aperture. You can then switch lenses from the lens list.",
+    aspect: "The <b>shape of the photo</b>. Most drone cameras shoot <b>4:3</b>; full-frame payloads such as the P1 shoot <b>3:2</b>. It changes how wide the footprint is compared with its length.",
+    camsum: "<b>Megapixels (MP)</b> is how many pixels the sensor records; more pixels give finer ground detail and bigger files. <b>Focal length</b> is shown as the 35 mm equivalent so different drones compare: a higher number is more zoomed in, giving finer GSD but a smaller footprint per photo and more motion blur.",
+    lens: "The interchangeable lens on the payload. A <b>longer lens</b> (50 or 75 mm) gives finer GSD at the same altitude, but each photo covers less ground, so you need more photos and a slower speed or faster shutter to avoid blur. A <b>shorter lens</b> (24 mm) covers more ground per photo.",
+    mp: "<b>Resolution</b> in megapixels: how many pixels the sensor records. At the same sensor size and focal length, more megapixels means finer ground detail (smaller GSD) and larger files.",
+    feq: "<b>35 mm-equivalent focal length</b>: how zoomed in the lens is, expressed as if on a full-frame camera so different sensors can be compared. Higher numbers give a narrower view, finer GSD and more blur risk. Find it on your camera's spec sheet (often listed as \"equivalent focal length\").",
+    ap: "<b>Aperture</b> is the lens opening, written as an f-number. A <b>lower</b> number (f/2.8) is a wider opening: more light but softer edges and less depth of field. A <b>higher</b> number (f/8) lets in less light and is sharper edge to edge, up to a point: past it, <b>diffraction</b> softens the whole image, and it starts sooner on high-megapixel sensors with small pixels. Each full stop (f/4 → f/5.6 → f/8) halves the light.",
+    ss: "<b>Shutter speed</b> is how long the sensor is exposed. A faster shutter (1/2000 s) freezes the drone's movement, so less motion blur, but lets in half the light of 1/1000 s. Mapping usually needs <b>1/1000 s or faster</b>.",
+    iso: "<b>ISO</b> is the sensor's sensitivity. Raising it brightens the image but adds <b>digital grain</b> (noise), and grain increases as the number goes up. Grain hides fine ground detail and weakens image matching. <b>The lowest ISO is optimal</b>; avoid ISO 800 and above where you can. Doubling ISO (100 → 200) is one stop brighter.",
+    fmt: "<b>Sensor size</b> is the physical size of the camera's sensor. A bigger sensor has bigger pixels at the same megapixel count, so it gathers more light and gives cleaner images at the same ISO.",
+    range: "The <b>widest and narrowest apertures</b> this lens can use. The aperture slider only offers stops inside this range.",
+    smax: "The <b>fastest mechanical shutter speed</b> the camera supports. The shutter slider stops here.",
+    isomax: "The <b>highest ISO</b> the camera offers. This is a camera limit, not a recommended setting: high ISO adds heavy grain.",
+    stype: "<b>Mechanical</b>: a physical shutter exposes the whole frame at once, ideal for mapping. <b>Global (electronic)</b>: the sensor reads every pixel at the same instant, so it maps like a mechanical shutter (for example the Phase One iXM-GS120). <b>Rolling (electronic)</b>: the sensor reads line by line, so the image skews as the drone moves; fly slower and turn on rolling-shutter correction when processing.",
+    isocap: "The highest ISO the <b>Recommend</b> button will choose. Keep it <b>below 800</b> to avoid visible grain; lower is cleaner.",
+    mi: "The <b>minimum capture interval</b>: how quickly the camera can take one photo after another. At high front overlap it limits how fast you can fly.",
+    orient: "Which side of the photo runs <b>across the flight line</b>. Long side across track gives wider strips and fewer flight lines.",
+    light: "Roughly how bright the scene is, used to work out exposure. Darker conditions need a <b>wider aperture</b>, a <b>slower shutter</b> or a <b>higher ISO</b>. Clear midday sun (high sun, clear sky) is about EV 16 at ISO 100; ordinary bright sun about EV 15.",
+  };
+  function infoBtn(key, name) {
+    return `<button type="button" class="info" data-info="${key}" aria-expanded="${state.tip === key}" aria-label="About ${name}">i</button>`;
+  }
+  function closeTip() {
+    d0.querySelectorAll(".tip").forEach(t => t.remove());
+    d0.querySelectorAll(".info[aria-expanded='true']").forEach(b => b.setAttribute("aria-expanded", "false"));
+    state.tip = null;
+  }
+  const d0 = document;
+  d0.addEventListener("click", e => {
+    const b = e.target.closest(".info");
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const key = b.dataset.info, wasOpen = state.tip === key && b.getAttribute("aria-expanded") === "true";
+    closeTip();
+    if (wasOpen) return;
+    const tip = d0.createElement("div");
+    tip.className = "tip"; tip.id = "tip-" + key; tip.setAttribute("role", "note");
+    tip.innerHTML = TIPS[key];
+    const cell = b.closest(".fields > *, .drawer-body > *, .prof > *") || b.parentElement;
+    cell.after(tip);
+    if (cell.classList.contains("adv")) tip.classList.add("adv");
+    b.setAttribute("aria-expanded", "true"); b.setAttribute("aria-controls", tip.id);
+    state.tip = key;
+  });
+  d0.addEventListener("keydown", e => { if (e.key === "Escape" && state.tip) closeTip(); });
+
+  // ---- Wire up
+  $("sw").value = 17.3; $("sh").value = 13.0; $("fmax").value = 2.8; $("fmin").value = 11; $("mi").value = 1.0;
+  setFlightRanges();
+  ["alt", "spd", "fo", "so", "bl", "area", "relief", "mp", "feq", "smax", "isomax", "isocap", "isomin"].forEach(k => $(k).value = defaults[k]);
+  $("stype").value = "mechanical";
+  $("light").value = LIGHT_ORDER.findIndex(l => l.id === defaults.light);
+  $("orient").value = defaults.orient;
+  sel.value = defaults.preset; applyPreset();
+
+  sel.addEventListener("change", () => { applyPreset(); calc(); });
+  $("lens").addEventListener("change", () => { applyLens(); calc(); });
+  $("ap-r").addEventListener("input", fillShutters);
+  fmtSel.addEventListener("change", () => {
+    const fm = FORMATS.find(x => x.id === fmtSel.value);
+    if (fm && fm.sw) { $("sw").value = fm.sw; $("sh").value = fm.sh; }
+    calc();
+  });
+  ["fmax", "fmin"].forEach(id => $(id).addEventListener("input", () => { fillApertures(); fillShutters(); calc(); }));
+  ["sw", "sh"].forEach(id => $(id).addEventListener("input", () => { syncFormat(); calc(); }));
+  $("smax").addEventListener("input", () => { fillShutters(); calc(); });
+  $("isomax").addEventListener("input", () => { fillIsos(); calc(); });
+  $("isomin").addEventListener("input", () => { fillIsos(); calc(); });
+  $("stype").addEventListener("input", calc);
+  ["mp", "feq", "mi", "alt", "spd", "fo", "so", "bl", "area", "relief", "orient", "ap-r", "ss-r", "iso-r", "light", "isocap"].forEach(id => $(id).addEventListener("input", calc));
+  Object.keys(FLIGHT).forEach(id => {
+    $(id + "-r").addEventListener("input", () => { $(id).value = $(id + "-r").value; calc(); });
+    // On leaving the box: empty or out-of-range values snap back inside the sanity limits
+    $(id).addEventListener("change", () => {
+      const [lo, hi] = LIMIT[id][state.units], v = parseFloat($(id).value);
+      $(id).value = isFinite(v) ? Math.min(hi, Math.max(lo, v)) : (lastGood[id] ?? $(id + "-r").value);
+      calc();
+    });
+  });
+  $("rec").addEventListener("click", recommend);
+  d0site();
+  function d0site() {
+    document.querySelectorAll(".site-pick button").forEach(b => b.addEventListener("click", () => {
+      state.site = b.dataset.site;
+      document.querySelectorAll(".site-pick button").forEach(x => x.setAttribute("aria-pressed", x === b));
+      calc();
+    }));
+  }
+  $("copy").addEventListener("click", () => {
+    const done = ok => { $("copy").textContent = ok ? "Copied" : "Select and copy"; setTimeout(() => $("copy").textContent = "Copy", 1800); };
+    try {
+      navigator.clipboard.writeText(pilotText()).then(() => done(true), () => { selectPilot(); done(false); });
+    } catch (e) { selectPilot(); done(false); }
+  });
+  function pilotText() {
+    const quick = $("wrap").dataset.mode === "quick";
+    const keep = r => r[3] === "both" || r[3] === (quick ? "quick" : "adv");
+    const lines = rs => rs.filter(keep).map(([k, v2]) => `  ${k}: ${v2}`);
+    return ["DJI Pilot 2 — mapping mission", "", "Route:", ...lines(state.pilotRows.route), "", "Camera:", ...lines(state.pilotRows.cam)].join("\n");
+  }
+  function selectPilot() {
+    const r = document.createRange(); r.selectNodeContents($("pilot"));
+    const sel2 = window.getSelection(); sel2.removeAllRanges(); sel2.addRange(r);
+  }
+  // Any manual change makes the last recommendation stale (Recommend sets values without firing events)
+  ["input", "change"].forEach(ev => $("wrap").addEventListener(ev, () => { $("rectext").textContent = ""; }));
+  ["u-m", "u-i"].forEach(id => $(id).addEventListener("click", () => { $("rectext").textContent = ""; }));
+  $("t-quick").onclick = () => setMode("quick");
+  $("t-adv").onclick = () => setMode("advanced");
+  $("assume").addEventListener("click", e => { if (e.target.dataset.go) setMode(e.target.dataset.go); });
+  $("u-m").onclick = () => setUnits("metric");
+  $("u-i").onclick = () => setUnits("imperial");
+  // ---- Camera light meter (phones): ambient light from the photo's own exposure metadata (EXIF).
+  // The phone's meter picks shutter, aperture and ISO for the scene, so EV100 = log2(N^2 / t) - log2(ISO / 100).
+  // Reads JPEG and HEIC (searches the whole file for the EXIF block). The photo never leaves the phone.
+  function findTiff(u8) {
+    for (let i = 0; i + 10 < u8.length; i++) {
+      if (u8[i] === 0x45 && u8[i + 1] === 0x78 && u8[i + 2] === 0x69 && u8[i + 3] === 0x66 && u8[i + 4] === 0 && u8[i + 5] === 0) {
+        const t = i + 6;
+        if ((u8[t] === 0x49 && u8[t + 1] === 0x49 && u8[t + 2] === 0x2A) || (u8[t] === 0x4D && u8[t + 1] === 0x4D && u8[t + 3] === 0x2A)) return t;
+      }
+    }
+    return -1;
+  }
+  function readExif(buf) {
+    const u8 = new Uint8Array(buf), t = findTiff(u8);
+    if (t < 0) return null;
+    const v = new DataView(buf), le = v.getUint16(t) === 0x4949;
+    const g16 = p => v.getUint16(p, le), g32 = p => v.getUint32(p, le), ok = (p, n) => p >= 0 && p + n <= v.byteLength;
+    const out = {}, seen = new Set();
+    const walk = (ifd, depth) => {
+      if (!ok(ifd, 2) || depth > 3 || seen.has(ifd)) return;
+      seen.add(ifd);
+      const n = g16(ifd);
+      out.tags = (out.tags || 0) + n;
+      for (let i = 0; i < n; i++) {
+        const e = ifd + 2 + i * 12; if (!ok(e, 12)) return;
+        const tag = g16(e), type = g16(e + 2), off = t + g32(e + 8);
+        const num = () => type === 3 ? g16(e + 8) : type === 4 ? g32(e + 8)
+          : (type === 5 || type === 10) && ok(off, 8) ? (type === 10 ? v.getInt32(off, le) / v.getInt32(off + 4, le) : g32(off) / g32(off + 4)) : NaN;
+        if (tag === 0x8769) walk(off, depth + 1);
+        else if (tag === 0x829A) out.t = num();           // ExposureTime (s)
+        else if (tag === 0x829D) out.N = num();           // FNumber
+        else if (tag === 0x8827) out.iso = num();         // ISO (PhotographicSensitivity)
+        else if (tag === 0x8833 && !out.iso) out.iso = num();  // ISOSpeed
+        else if (tag === 0x9201) out.tv = num();          // ShutterSpeedValue (APEX)
+        else if (tag === 0x9202) out.av = num();          // ApertureValue (APEX)
+        else if (tag === 0x9203) out.bv = num();          // BrightnessValue (APEX)
+        else if (tag === 0x0110 && type === 2 && ok(off, 4)) out.model = new TextDecoder().decode(new Uint8Array(buf, off, Math.min(g32(e + 4), 40))).replace(/\0.*$/, "");
+      }
+    };
+    walk(t + g32(t + 4), 0);
+    if (!(out.t > 0) && isFinite(out.tv)) out.t = Math.pow(2, -out.tv);
+    if (!(out.N > 0) && isFinite(out.av)) out.N = Math.pow(2, out.av / 2);
+    return out;
+  }
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  if (IOS) $("wrap").classList.add("ios");
+  // Inside the Droneland iPhone app the button opens a native live light meter
+  const NATIVE = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lightmeter);
+  const LM_HELP = NATIVE
+    ? "Opens a live light meter. Point the camera at ground like your site (not the sky), tap to meter a spot, then Use reading. Nothing is photographed or saved."
+    : IOS && HOSTED
+    ? "Opens a live light meter. Point the camera at ground like your site (not the sky), then Use reading. Nothing is photographed or saved."
+    : IOS
+    ? "On iPhone the camera meter works in the hosted Droneland app" + (HOSTED_URL ? " (" + HOSTED_URL + ")" : "") + ", not inside Claude."
+    : "Opens your camera. Photograph ground like your site (not the sky). The app reads the camera's exposure settings, then discards the photo. It is not saved, kept or uploaded.";
+  $("lm-msg").textContent = LM_HELP;
+  const readFile = f => f.arrayBuffer ? f.arrayBuffer()
+    : new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsArrayBuffer(f); });
+  $("lm-file").addEventListener("change", async e => {
+    let f = e.target.files && e.target.files[0];
+    const msg = $("lm-msg");
+    e.target.value = "";                                  // drop the input's hold on the photo straight away
+    if (!f) return;
+    msg.className = "hint"; msg.textContent = "Reading the camera's exposure settings…";
+    let x = null, buf = null;
+    try { buf = await readFile(f); x = readExif(buf); } catch { x = null; }
+    buf = null; f = null;                                 // ephemeral: only the numbers are kept, never the image
+    let ev = NaN, how = "";
+    if (x && x.t > 0 && x.N > 0 && x.iso > 0) {
+      ev = Math.log2(x.N * x.N / x.t) - Math.log2(x.iso / 100);
+      how = `${x.model ? x.model + " used " : "Camera used "}f/${fmt(x.N, 1)}, ${x.t >= 1 ? fmt(x.t, 1) + " s" : "1/" + Math.round(1 / x.t) + " s"}, ISO ${Math.round(x.iso)}`;
+    } else if (x && isFinite(x.bv)) {
+      ev = x.bv + 5;
+      how = "From the photo's brightness value";
+    }
+    if (!isFinite(ev)) {
+      msg.className = "hint warn";
+      msg.textContent = (x
+        ? `This photo's camera settings have been removed (${x.tags} other metadata field${x.tags === 1 ? "" : "s"} found).`
+        : "This photo has no camera metadata.")
+        + " Your phone's browser removed the exposure settings from the camera photo, so light can't be measured this way on this device (iPhone browsers currently do this to every in-browser photo). Set the light with the slider instead. The photo has been discarded.";
+      return;
+    }
+    applyEv(ev, how);
+  });
+  function applyEv(ev, how) {
+    const msg = $("lm-msg");
+    measuredEv = Math.round(ev * 10) / 10;
+    const near = LIGHT_ORDER.reduce((a, b) => Math.abs(b.ev - ev) < Math.abs(a.ev - ev) ? b : a);
+    $("light").value = LIGHT_ORDER.indexOf(near);         // thumb shows the closest preset; maths uses the measured EV
+    $("rectext").textContent = "";
+    calc();
+    msg.className = ev < LIGHT_ORDER[0].ev - 0.5 ? "hint warn" : "hint ok";
+    msg.textContent = `${how}: ambient light about EV ${fmt(ev, 1)} (close to ${near.name.toLowerCase()}). Exposure checks now use this reading; move the slider to go back to the presets.`
+      + (ev < LIGHT_ORDER[0].ev - 0.5 ? " Very low light: expect high ISO or a slow shutter." : "");
+  }
+  // Called by the iPhone app with the camera's live auto-exposure (offset: EV still to settle)
+  window.dronelandApplyReading = (N, t, iso, offset, src) => {
+    if (!(N > 0 && t > 0 && iso > 0)) return;
+    applyEv(Math.log2(N * N / t) - Math.log2(iso / 100) + (offset || 0),
+      `${src || "Camera"} live reading f/${fmt(N, 1)}, ${t >= 1 ? fmt(t, 1) + " s" : "1/" + Math.round(1 / t) + " s"}, ISO ${Math.round(iso)}`);
+  };
+
+  // ---- Built-in live light meter (hosted, iPhone): reads the camera's own auto-exposure through the
+  // browser while the view is live. No frame is captured or kept; the camera stops when it closes.
+  const LV_N = 1.78;                                      // main-camera aperture on recent iPhones (browsers don't report it)
+  const shutS = t => t >= 1 ? fmt(t, 1) + " s" : "1/" + Math.round(1 / t) + " s";
+  let lv = null;
+  function lvClose() {
+    if (!lv) return;
+    clearInterval(lv.timer);
+    if (lv.stream) lv.stream.getTracks().forEach(t => t.stop());
+    lv.el.remove(); lv = null; document.body.style.overflow = "";
+    $("lm-sc").focus();
+  }
+  function lvRead(track) {
+    const s = track.getSettings ? track.getSettings() : {};
+    return { t: s.exposureTime > 0 ? s.exposureTime / 10000 : NaN,   // spec unit: 100 µs
+             iso: s.iso, N: s.aperture > 0 ? s.aperture : LV_N, keys: Object.keys(s) };
+  }
+  async function lvOpen() {
+    const el = document.createElement("div");
+    el.className = "lv"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Live light meter");
+    el.innerHTML = '<video playsinline muted autoplay></video><div class="lv-top">Point at ground like your site, not the sky.</div>'
+      + '<div class="lv-panel"><div class="lv-ev" aria-live="polite">Starting camera…</div><div class="lv-det"></div>'
+      + '<div class="lv-btns"><button type="button" class="lv-cancel">Cancel</button><button type="button" class="lv-use" disabled>Use reading</button></div>'
+      + '<div class="lv-note">Live view only. Nothing is photographed or saved.</div></div>';
+    document.body.appendChild(el); document.body.style.overflow = "hidden";
+    const me = lv = { el, timer: 0, stream: null, last: null };
+    const q = c => el.querySelector(c);
+    q(".lv-cancel").onclick = lvClose;
+    el.addEventListener("keydown", e => { if (e.key === "Escape") lvClose(); });
+    q(".lv-use").onclick = () => {
+      const r = me.last; lvClose();
+      if (r) applyEv(r.ev, `iPhone camera live reading f/${fmt(r.N, 1)}, ${shutS(r.t)}, ISO ${Math.round(r.iso)}`);
+    };
+    q(".lv-cancel").focus();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+      if (lv !== me) { stream.getTracks().forEach(t => t.stop()); return; }
+      me.stream = stream;
+      const v = q("video"); v.srcObject = stream; v.play().catch(() => {});
+      const track = stream.getVideoTracks()[0];
+      let tries = 0;
+      me.timer = setInterval(() => {
+        if (lv !== me) return;
+        const r = lvRead(track); tries++;
+        if (r.t > 0 && r.iso > 0) {
+          me.last = { ...r, ev: Math.log2(r.N * r.N / r.t) - Math.log2(r.iso / 100) };
+          q(".lv-ev").textContent = "EV " + fmt(me.last.ev, 1);
+          q(".lv-det").textContent = `f/${fmt(r.N, 1)} · ${shutS(r.t)} · ISO ${Math.round(r.iso)}`;
+          q(".lv-use").disabled = false;
+        } else if (tries > 10 && !me.last) {
+          clearInterval(me.timer);
+          q(".lv-ev").textContent = "No exposure data";
+          q(".lv-det").textContent = "This browser shows the camera but doesn't share its shutter speed and ISO, so it can't measure light. Camera reported: " + (r.keys.join(", ") || "nothing") + ".";
+        }
+      }, 300);
+    } catch (e) {
+      if (lv !== me) return;
+      q(".lv-ev").textContent = "Camera unavailable";
+      q(".lv-det").textContent = e && e.name === "NotAllowedError"
+        ? "Camera access was blocked. In Safari tap aA › Website Settings › Camera › Allow, then try again."
+        : "The camera couldn't be opened here (" + ((e && e.name) || "error") + ").";
+    }
+  }
+  $("lm-sc").addEventListener("click", () => {
+    if (NATIVE) { window.webkit.messageHandlers.lightmeter.postMessage("open"); return; }
+    if (!IOS) return;
+    if (!HOSTED) { const msg = $("lm-msg"); msg.className = "hint warn"; msg.textContent = LM_HELP; return; }
+    lvOpen();
+  });
+  // Moving the slider by hand returns to the preset light levels
+  $("light").addEventListener("input", e => {
+    if (!e.isTrusted || measuredEv === null) return;
+    measuredEv = null;
+    $("lm-msg").className = "hint";
+    $("lm-msg").textContent = LM_HELP;
+    calc();
+  });
+
+  // ---- Settings popover (units live here; metric is the default for Australian operators)
+  const setPop = open => { $("set-pop").hidden = !open; $("set-open").setAttribute("aria-expanded", open); };
+  $("set-open").onclick = e => { e.stopPropagation(); setPop($("set-pop").hidden); };
+  document.addEventListener("click", e => { if (!$("set-pop").hidden && !e.target.closest(".setwrap")) setPop(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("set-pop").hidden) { setPop(false); $("set-open").focus(); } });
+
+  // ---- Collapsible sections (phones only): every card starts collapsed except Flight
+  document.querySelectorAll("section.panel > h2").forEach(h => {
+    const sec = h.parentElement;
+    if (h.firstChild && h.firstChild.nodeType === 3 && h.firstChild.textContent.trim()) {
+      const sp = document.createElement("span"); sp.textContent = h.firstChild.textContent.trim(); h.replaceChild(sp, h.firstChild);
+    }
+    const name = h.querySelector("span").textContent.trim();
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "colbtn";
+    b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+    h.appendChild(b);
+    const set = c => { sec.classList.toggle("collapsed", c); b.setAttribute("aria-expanded", !c); b.setAttribute("aria-label", `${c ? "Expand" : "Collapse"} ${name}`); };
+    set(name !== "Flight");
+    h.addEventListener("click", e => {
+      if (!matchMedia("(max-width: 700px)").matches) return;                         // phones only
+      if (e.target.closest("button") && e.target.closest("button") !== b) return;   // e.g. Copy
+      set(!sec.classList.contains("collapsed"));
+    });
+  });
+  try { if (localStorage.getItem("smc-mode") === "advanced") setMode("advanced"); } catch (e) {}
+  calc();
+
+  // ---- Saved camera profiles (shared db collection "profiles"; rows are untrusted data)
+  const num = (v, lo, hi) => typeof v === "number" && isFinite(v) && v >= lo && v <= hi;
+  function toPreset(id, d) {
+    if (!d || typeof d.name !== "string" || !d.name.trim()) return null;
+    if (![num(d.sw, 1, 100), num(d.sh, 1, 100), num(d.mp, 0.5, 1000),
+          num(d.smax, 100, 100000), num(d.isoMax, 50, 1e6), num(d.mi, 0.01, 60)].every(Boolean)) return null;
+    const okLens = l => l && num(l.mm, 1, 2000) && num(l.fmax, 0.7, 64) && num(l.fmin, 0.7, 64);
+    let lenses = (Array.isArray(d.lenses) ? d.lenses : [{ mm: d.fl, fmax: d.fmax, fmin: d.fmin }]).filter(okLens).slice(0, 20)
+      .map(l => ({ mm: l.mm, fmax: l.fmax, fmin: Math.max(l.fmin, l.fmax) }))
+      .sort((a, b) => a.mm - b.mm);
+    lenses = lenses.filter((l, i) => i === 0 || l.mm !== lenses[i - 1].mm);
+    if (!lenses.length) return null;
+    lenses.forEach(l => { l.name = `${l.mm} mm · f/${l.fmax}${l.fmin > l.fmax ? `–f/${l.fmin}` : ""}`; });
+    const first = lenses.find(l => l.mm === d.fl) || lenses[0];
+    const diag = Math.hypot(d.sw, d.sh), shutter = ["mechanical", "global", "rolling"].includes(d.shutter) ? d.shutter : "mechanical";
+    return { id: "sp:" + id, docId: id, saved: true, name: d.name.trim().slice(0, 60), payload: d.name.trim().slice(0, 60),
+      sw: d.sw, sh: d.sh, mp: d.mp, fl: first.mm, eq: Math.round(first.mm * 43.27 / diag), fmax: first.fmax, fmin: first.fmin, lenses,
+      smax: d.smax, isoMin: num(d.isoMin, 25, 1e6) ? d.isoMin : 100, isoMax: d.isoMax, mi: d.mi,
+      electronic: shutter === "rolling", global: shutter === "global" };
+  }
+  function profMsg(t) { $("prof-msg").textContent = t || ""; }
+  function profUI() {
+    const p = preset(), custom = sel.value === "custom", isSaved = !!(p && p.saved);
+    $("prof").hidden = !(custom || isSaved);
+    $("prof-save").hidden = !(custom && dbRef && canWrite);
+    $("prof-remove").hidden = !(isSaved && dbRef && canWrite);
+    $("prof-lens").hidden = !(isSaved && dbRef && canWrite);
+    $("lens-del").hidden = !(isSaved && p.lenses.length > 1);
+    $("prof-confirm").hidden = true;
+    if (custom && !dbRef) profMsg(dbState === "loading" ? "" : "Saving camera profiles isn't available in this view.");
+  }
+  async function saveProfile() {
+    const name = $("prof-name").value.trim();
+    if (!name) { profMsg("Give the profile a name first."); $("prof-name").focus(); return; }
+    if (saved.some(p => p.name.toLowerCase() === name.toLowerCase())) { profMsg(`A profile called “${name}” already exists. Use a different name.`); return; }
+    const sw = +$("sw").value, sh = +$("sh").value, diag = Math.hypot(sw, sh);
+    const fl = Math.round(+$("feq").value * diag / 43.27 * 10) / 10;
+    const data = { name, sw, sh, mp: +$("mp").value, fl, lenses: [{ mm: fl, fmax: +$("fmax").value, fmin: +$("fmin").value }],
+      fmax: +$("fmax").value, fmin: +$("fmin").value, smax: +$("smax").value, isoMin: +$("isomin").value || 100,
+      isoMax: +$("isomax").value, mi: +$("mi").value, shutter: $("stype").value, createdAt: new Date().toISOString() };
+    if (!toPreset("check", data)) { profMsg("Some specs are missing or out of range. Check resolution, focal length and the Advanced camera fields."); return; }
+    $("prof-save-btn").disabled = true; profMsg("Saving…");
+    try {
+      const ref = await dbRef.collection("profiles").add(data);
+      state.selectAfter = "sp:" + ref.id;
+      $("prof-name").value = "";
+      profMsg(HOSTED ? `Saved on this device. Pick “${name}” any time.` : `Saved. Everyone using this page can now pick “${name}”.`);
+    } catch (e) {
+      if (e && e.code === "invalid_argument") { canWrite = false; profUI(); profMsg("You can use saved profiles but not save new ones on this page."); }
+      else if (e && e.code === "quota_exceeded") profMsg("The profile list is full. Remove an unused profile, then try again.");
+      else profMsg("Couldn't save the profile. Check your connection and try again.");
+    } finally { $("prof-save-btn").disabled = false; }
+  }
+  async function removeProfile() {
+    const p = preset(); if (!p || !p.saved) return;
+    $("prof-del-yes").disabled = true;
+    try { await dbRef.doc("profiles/" + p.docId).delete(); profMsg(`Removed “${p.name}”.`); }
+    catch (e) { profMsg(e && e.code === "invalid_argument" ? "You don't have permission to remove profiles on this page." : "Couldn't remove the profile. Try again."); }
+    finally { $("prof-del-yes").disabled = false; }
+  }
+  $("prof-save-btn").onclick = saveProfile;
+  // Lens list edits write the whole lens array back to the profile (arrays replace on update)
+  const lensRows = p => p.lenses.map(l => ({ mm: l.mm, fmax: l.fmax, fmin: l.fmin }));
+  let confirmAction = null;
+  async function writeLenses(p, lenses, okMsg) {
+    try { await dbRef.doc("profiles/" + p.docId).update({ lenses, fl: lenses[0].mm, fmax: lenses[0].fmax, fmin: lenses[0].fmin }); profMsg(okMsg); }
+    catch (e) { profMsg(e && e.code === "invalid_argument" ? "You don't have permission to change profiles on this page." : "Couldn't update the lenses. Try again."); }
+  }
+  $("nl-add").onclick = async () => {
+    const p = preset(); if (!p || !p.saved) return;
+    const mm = +$("nl-mm").value, fmax = +$("nl-fmax").value, fmin = +$("nl-fmin").value || fmax;
+    if (!(mm >= 1 && mm <= 2000)) { profMsg("Enter the lens focal length in mm."); $("nl-mm").focus(); return; }
+    if (!(fmax >= 0.7 && fmax <= 64)) { profMsg("Enter the widest aperture, for example 5.6."); $("nl-fmax").focus(); return; }
+    if (!(fmin >= fmax && fmin <= 64)) { profMsg("The narrowest aperture must be the same as or higher than the widest, for example 22."); $("nl-fmin").focus(); return; }
+    if (p.lenses.some(l => l.mm === mm)) { profMsg(`This profile already has ${/^(8|11|18)/.test(String(mm)) ? "an" : "a"} ${mm} mm lens.`); return; }
+    $("nl-add").disabled = true;
+    state.selectLens = mm;
+    await writeLenses(p, [...lensRows(p), { mm, fmax, fmin }].sort((a, b) => a.mm - b.mm), `Added the ${mm} mm lens to “${p.name}”.`);
+    ["nl-mm", "nl-fmax", "nl-fmin"].forEach(id => $(id).value = "");
+    $("nl-add").disabled = false;
+  };
+  $("lens-del").onclick = () => {
+    const p = preset(), mm = +$("lens").value;
+    confirmAction = () => writeLenses(p, lensRows(p).filter(l => l.mm !== mm), `Removed the ${mm} mm lens.`);
+    $("prof-confirm-text").textContent = `Remove the ${mm} mm lens from “${p.name}” ${SCOPE}?`;
+    $("prof-remove").hidden = false; $("prof-del").hidden = true; $("prof-confirm").hidden = false; $("prof-del-yes").focus();
+  };
+  $("prof-name").addEventListener("keydown", e => { if (e.key === "Enter") saveProfile(); });
+  $("prof-del").onclick = () => { const p = preset(); confirmAction = removeProfile; $("prof-confirm-text").textContent = `Remove “${p.name}” ${SCOPE}?`; $("prof-confirm").hidden = false; $("prof-del-yes").focus(); };
+  $("prof-del-no").onclick = () => { $("prof-confirm").hidden = true; $("prof-del").hidden = false; };
+  $("prof-del-yes").onclick = async () => { const act = confirmAction; confirmAction = null; if (act) await act(); $("prof-confirm").hidden = true; $("prof-del").hidden = false; };
+  (async () => {
+    const db = HOSTED ? localDb() : window.claude && window.claude.use ? await window.claude.use("db") : null;
+    if (!db) { dbState = "off"; profUI(); return; }
+    dbRef = db;
+    if (!HOSTED) try { const user = await window.claude.use("user"); if (user && (await user.can("data.write")) === false) canWrite = false; } catch (e) {}
+    profUI();
+    const timer = setTimeout(() => { if (dbState === "loading") profMsg("Saved profiles can't be reached right now; they'll appear when the connection returns."); }, 10000);
+    db.collection("profiles").orderBy("name").onSnapshot(snap => {
+      if (!snap.metadata.fromCache) { clearTimeout(timer); if (dbState === "loading") profMsg(""); dbState = "ready"; }
+      saved = snap.docs.map(d => toPreset(d.id, d.data())).filter(Boolean);
+      const before = sel.value;
+      const switched = buildPresetOptions();
+      if (state.selectAfter && saved.some(p => p.id === state.selectAfter)) { sel.value = state.selectAfter; state.selectAfter = null; }
+      if (switched || sel.value !== before || (preset() && preset().saved)) { applyPreset(); }
+      profUI(); calc();
+    }, () => { clearTimeout(timer); dbState = "off"; profMsg("Saved profiles aren't available right now."); profUI(); });
+  })();
+
+
+  // ---- Floating sharpness badge: appears once less than 65% of the sharpness donut is on screen
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(([e]) => { $("fs").hidden = e.intersectionRatio >= 0.65; },
+      { threshold: [0, 0.65, 1] }).observe(document.querySelector("svg.donut"));
+  }
+  $("fs").onclick = () => { if ($("sharp").classList.contains("collapsed") && matchMedia("(max-width: 700px)").matches) $("sharp").querySelector("h2").click();
+    $("sharp").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+  };
+
+  // ---- Quick GSD side tool: MP + 35 mm-equivalent focal length + altitude.
+  // Sensor size cancels out: GSD = alt · 43.27 · (w/diag) / (pixels across · f_eq), with w/diag set by the photo shape.
+  const G = { aspect: 4 / 3 };
+  const gAltRange = () => imp() ? [3, 500, 1] : [1, 150, 1];
+  function gSetAltRange() {
+    const [mn, mx, st] = gAltRange(), el = $("g-alt");
+    el.min = mn; el.max = mx; el.step = st;
+    $("g-alt-scale").innerHTML = imp() ? `<span>${mn} ft</span><span>${mx} ft</span>` : `<span>${mn} m</span><span>${mx} m</span>`;
+  }
+  function gCalc() {
+    const mp = +$("g-mp").value, feq = +$("g-fl").value, altIn = +$("g-alt").value;
+    const alt = imp() ? altIn * FT : altIn, a = G.aspect, wFrac = a / Math.hypot(a, 1);
+    const nw = Math.sqrt(mp * 1e6 * a);
+    const gsd = alt * 43.27 * wFrac / (nw * feq);
+    const fpW = alt * 43.27 * wFrac / feq, fpH = fpW / a;
+    $("g-mp-v").textContent = `${mp} MP`;
+    $("g-fl-v").textContent = `${feq} mm`;
+    $("g-alt-v").textContent = imp() ? `${altIn} ft` : `${altIn} m`;
+    const [g, gu] = gsdS(gsd);
+    $("g-gsd").innerHTML = `${g}<small>${gu}</small>`;
+    $("g-fp").textContent = `Each photo covers ${len(fpW, 0)} × ${len(fpH, 0)} on the ground`;
+  }
+  function gAspect(a) {
+    G.aspect = a;
+    $("g-43").setAttribute("aria-pressed", a === 4 / 3); $("g-32").setAttribute("aria-pressed", a === 3 / 2);
+    gCalc();
+  }
+  function gUseDrone() {
+    const p = preset(), sw = +$("sw").value, sh = +$("sh").value;
+    $("g-mp").value = p ? p.mp : +$("mp").value;
+    $("g-fl").value = p ? (p.lenses ? Math.round(+$("lens").value * 43.27 / Math.hypot(sw, sh)) : p.eq) : +$("feq").value;
+    $("g-alt").value = $("alt").value;
+    gAspect(Math.abs(sw / sh - 1.5) < Math.abs(sw / sh - 4 / 3) ? 3 / 2 : 4 / 3);
+  }
+  let gReturn = null;
+  function gOpen() {
+    gReturn = document.activeElement;
+    $("gsd-drawer").hidden = $("gsd-scrim").hidden = false;
+    $("gsd-close").focus();
+  }
+  function gClose() {
+    $("gsd-drawer").hidden = $("gsd-scrim").hidden = true;
+    if (gReturn) gReturn.focus();
+  }
+  gSetAltRange();
+  $("g-mp").value = 20; $("g-fl").value = 24; $("g-alt").value = 80;
+  gCalc();
+  ["g-mp", "g-fl", "g-alt"].forEach(id => $(id).addEventListener("input", gCalc));
+  $("g-43").onclick = () => gAspect(4 / 3);
+  $("g-32").onclick = () => gAspect(3 / 2);
+  $("g-use").onclick = gUseDrone;
+  $("gsd-open").onclick = gOpen;
+  $("gsd-close").onclick = gClose;
+  $("gsd-scrim").onclick = gClose;
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("gsd-drawer").hidden) gClose(); });
+  // Keep the drawer's altitude in the same units as the calculator
+  ["u-m", "u-i"].forEach(id => $(id).addEventListener("click", () => {
+    const toImp = id === "u-i", v = +$("g-alt").value;
+    if (toImp === (G.units === "imperial")) return;
+    G.units = state.units;
+    gSetAltRange();
+    $("g-alt").value = round(toImp ? v / FT : v * FT, 0);
+    gCalc();
+  }));
+  G.units = state.units;
+})();
+</script>
+
+</body></html>
