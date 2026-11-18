@@ -181,6 +181,8 @@ svg.donut text { font: 500 22px var(--f-mono); fill: var(--ink); }
 .g-v small { font-size: 15px; color: var(--muted); margin-left: 4px; }
 .g-s { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .g-use { align-self: flex-start; }
+.subh { font: 700 14px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); margin: 18px 0 14px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+.subh::before { content: ""; width: 4px; height: 12px; border-radius: 1px; background: var(--accent); margin-right: 2px; flex: none; }
 .site { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px; }
 .site-l { font-size: 13px; font-weight: 500; color: var(--muted); }
 .site-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
@@ -364,80 +366,6 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     <!-- INPUTS -->
     <div class="col">
       <section class="panel">
-        <h2>Flight</h2>
-        <div class="fields">
-          <div class="full slider">
-            <label class="sl-head" for="alt"><span class="lt">Altitude AGL<button type="button" class="info" data-info="alt" aria-expanded="false" aria-label="About altitude agl">i</button></span> <span class="numv"><input type="number" id="alt" inputmode="decimal" step="any"><span class="nu" id="alt-u"></span></span></label>
-            <input type="range" id="alt-r" aria-label="Altitude AGL slider">
-            <div class="scale" id="alt-scale"></div>
-            <span class="fhint" id="althint"></span>
-          </div>
-          <div class="full slider">
-            <label class="sl-head" for="spd"><span class="lt">Flight speed<button type="button" class="info" data-info="spd" aria-expanded="false" aria-label="About flight speed">i</button></span> <span class="numv"><input type="number" id="spd" inputmode="decimal" step="any"><span class="nu" id="spd-u"></span></span></label>
-            <input type="range" id="spd-r" aria-label="Flight speed slider">
-            <div class="scale" id="spd-scale"></div>
-            <span class="fhint" id="spdhint"></span>
-          </div>
-          <div class="full slider adv">
-            <label class="sl-head" for="fo"><span class="lt">Front overlap<button type="button" class="info" data-info="fo" aria-expanded="false" aria-label="About front overlap">i</button></span> <span class="numv"><input type="number" id="fo" inputmode="decimal" step="any"><span class="nu" id="fo-u"></span></span></label>
-            <input type="range" id="fo-r" aria-label="Front overlap slider">
-            <div class="scale" id="fo-scale"></div>
-          </div>
-          <div class="full slider adv">
-            <label class="sl-head" for="so"><span class="lt">Side overlap<button type="button" class="info" data-info="so" aria-expanded="false" aria-label="About side overlap">i</button></span> <span class="numv"><input type="number" id="so" inputmode="decimal" step="any"><span class="nu" id="so-u"></span></span></label>
-            <input type="range" id="so-r" aria-label="Side overlap slider">
-            <div class="scale" id="so-scale"></div>
-          </div>
-          <div class="full slider adv">
-            <label class="sl-head" for="bl"><span class="lt">Blur limit<button type="button" class="info" data-info="bl" aria-expanded="false" aria-label="About blur limit">i</button></span> <span class="numv"><input type="number" id="bl" inputmode="decimal" step="any"><span class="nu" id="bl-u"></span></span></label>
-            <input type="range" id="bl-r" aria-label="Blur limit slider">
-            <div class="scale" id="bl-scale"></div>
-          </div>
-          <div class="full slider adv">
-            <label class="sl-head" for="relief"><span class="lt">Height variation<button type="button" class="info" data-info="relief" aria-expanded="false" aria-label="About height variation">i</button></span> <span class="numv"><input type="number" id="relief" inputmode="decimal" step="any"><span class="nu" id="relief-u"></span></span></label>
-            <input type="range" id="relief-r" aria-label="Height variation slider">
-            <div class="scale" id="relief-scale"></div>
-          </div>
-          <div class="full slider adv">
-            <label class="sl-head" for="area"><span class="lt">Survey area<button type="button" class="info" data-info="area" aria-expanded="false" aria-label="About survey area">i</button></span> <span class="numv"><input type="number" id="area" inputmode="decimal" step="any"><span class="nu" id="area-u"></span></span></label>
-            <input type="range" id="area-r" aria-label="Survey area slider">
-            <div class="scale" id="area-scale"></div>
-          </div>
-          <div class="full slider">
-            <label class="sl-head" for="light"><span class="lt">Light conditions<button type="button" class="info" data-info="light" aria-expanded="false" aria-label="About light conditions">i</button></span> <b id="light-v"></b></label>
-            <input type="range" id="light" min="0" step="1">
-            <div class="scale" id="light-scale"></div>
-            <div class="lmeter">
-              <label class="lmbtn" for="lm-file">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                Measure light with camera
-              </label>
-              <button type="button" class="lmbtn lmios" id="lm-sc">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                Measure light with camera
-              </button>
-              <input type="file" id="lm-file" accept="image/*" capture="environment" hidden>
-              <p class="hint" id="lm-msg"></p>
-            </div>
-          </div>
-          <div class="full site">
-            <span class="lt site-l">Site estimate<button type="button" class="info" data-info="site" aria-expanded="false" aria-label="About site estimate">i</button></span>
-            <div class="site-pick" role="group" aria-label="Site estimate">
-              <button type="button" data-site="" aria-pressed="true">None</button>
-              <button type="button" data-site="soccer" aria-pressed="false">Soccer pitch</button>
-              <button type="button" data-site="oval" aria-pressed="false">Athletics oval</button>
-              <button type="button" data-site="golf" aria-pressed="false">Par 4 golf hole</button>
-            </div>
-            <div class="site-out" id="site-out" hidden>
-              <table><tbody id="site-rows"></tbody></table>
-              <p class="site-note">Broad, rough estimates for reference only. Real fields, ovals and golf holes vary in size and shape; plan the actual site in your flight app.</p>
-            </div>
-          </div>
-        </div>
-        <p class="hint adv">Height variation is the tallest terrain rise or object above the ground you set altitude from. It sets how much depth of field you need.</p>
-      </section>
-
-      <section class="panel">
         <h2>Drone and Camera</h2>
         <div class="fields">
           <label class="full"><span class="lt">Drone / payload<button type="button" class="info" data-info="preset" aria-expanded="false" aria-label="About drone / payload">i</button></span>
@@ -516,6 +444,77 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
           </div>
           <p class="hint" id="prof-msg" aria-live="polite"></p>
         </div>
+        <h3 class="subh">Flight</h3>
+        <div class="fields">
+          <div class="full slider">
+            <label class="sl-head" for="alt"><span class="lt">Altitude AGL<button type="button" class="info" data-info="alt" aria-expanded="false" aria-label="About altitude agl">i</button></span> <span class="numv"><input type="number" id="alt" inputmode="decimal" step="any"><span class="nu" id="alt-u"></span></span></label>
+            <input type="range" id="alt-r" aria-label="Altitude AGL slider">
+            <div class="scale" id="alt-scale"></div>
+            <span class="fhint" id="althint"></span>
+          </div>
+          <div class="full slider">
+            <label class="sl-head" for="spd"><span class="lt">Flight speed<button type="button" class="info" data-info="spd" aria-expanded="false" aria-label="About flight speed">i</button></span> <span class="numv"><input type="number" id="spd" inputmode="decimal" step="any"><span class="nu" id="spd-u"></span></span></label>
+            <input type="range" id="spd-r" aria-label="Flight speed slider">
+            <div class="scale" id="spd-scale"></div>
+            <span class="fhint" id="spdhint"></span>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="fo"><span class="lt">Front overlap<button type="button" class="info" data-info="fo" aria-expanded="false" aria-label="About front overlap">i</button></span> <span class="numv"><input type="number" id="fo" inputmode="decimal" step="any"><span class="nu" id="fo-u"></span></span></label>
+            <input type="range" id="fo-r" aria-label="Front overlap slider">
+            <div class="scale" id="fo-scale"></div>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="so"><span class="lt">Side overlap<button type="button" class="info" data-info="so" aria-expanded="false" aria-label="About side overlap">i</button></span> <span class="numv"><input type="number" id="so" inputmode="decimal" step="any"><span class="nu" id="so-u"></span></span></label>
+            <input type="range" id="so-r" aria-label="Side overlap slider">
+            <div class="scale" id="so-scale"></div>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="bl"><span class="lt">Blur limit<button type="button" class="info" data-info="bl" aria-expanded="false" aria-label="About blur limit">i</button></span> <span class="numv"><input type="number" id="bl" inputmode="decimal" step="any"><span class="nu" id="bl-u"></span></span></label>
+            <input type="range" id="bl-r" aria-label="Blur limit slider">
+            <div class="scale" id="bl-scale"></div>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="relief"><span class="lt">Height variation<button type="button" class="info" data-info="relief" aria-expanded="false" aria-label="About height variation">i</button></span> <span class="numv"><input type="number" id="relief" inputmode="decimal" step="any"><span class="nu" id="relief-u"></span></span></label>
+            <input type="range" id="relief-r" aria-label="Height variation slider">
+            <div class="scale" id="relief-scale"></div>
+          </div>
+          <div class="full slider adv">
+            <label class="sl-head" for="area"><span class="lt">Survey area<button type="button" class="info" data-info="area" aria-expanded="false" aria-label="About survey area">i</button></span> <span class="numv"><input type="number" id="area" inputmode="decimal" step="any"><span class="nu" id="area-u"></span></span></label>
+            <input type="range" id="area-r" aria-label="Survey area slider">
+            <div class="scale" id="area-scale"></div>
+          </div>
+          <div class="full slider">
+            <label class="sl-head" for="light"><span class="lt">Light conditions<button type="button" class="info" data-info="light" aria-expanded="false" aria-label="About light conditions">i</button></span> <b id="light-v"></b></label>
+            <input type="range" id="light" min="0" step="1">
+            <div class="scale" id="light-scale"></div>
+            <div class="lmeter">
+              <label class="lmbtn" for="lm-file">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                Measure light with camera
+              </label>
+              <button type="button" class="lmbtn lmios" id="lm-sc">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                Measure light with camera
+              </button>
+              <input type="file" id="lm-file" accept="image/*" capture="environment" hidden>
+              <p class="hint" id="lm-msg"></p>
+            </div>
+          </div>
+          <div class="full site adv">
+            <span class="lt site-l">Site estimate<button type="button" class="info" data-info="site" aria-expanded="false" aria-label="About site estimate">i</button></span>
+            <div class="site-pick" role="group" aria-label="Site estimate">
+              <button type="button" data-site="" aria-pressed="true">None</button>
+              <button type="button" data-site="soccer" aria-pressed="false">Soccer pitch</button>
+              <button type="button" data-site="oval" aria-pressed="false">Athletics oval</button>
+              <button type="button" data-site="golf" aria-pressed="false">Par 4 golf hole</button>
+            </div>
+            <div class="site-out" id="site-out" hidden>
+              <table><tbody id="site-rows"></tbody></table>
+              <p class="site-note">Broad, rough estimates for reference only. Real fields, ovals and golf holes vary in size and shape; plan the actual site in your flight app.</p>
+            </div>
+          </div>
+        </div>
+        <p class="hint adv">Height variation is the tallest terrain rise or object above the ground you set altitude from. It sets how much depth of field you need.</p>
       </section>
 
       <p class="assume quick-only" id="assume"></p>
@@ -1686,7 +1685,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   document.addEventListener("click", e => { if (!$("set-pop").hidden && !e.target.closest(".setwrap")) setPop(false); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("set-pop").hidden) { setPop(false); $("set-open").focus(); } });
 
-  // ---- Collapsible sections (phones only): every card starts collapsed except Flight
+  // ---- Collapsible sections (phones only): every card starts collapsed except Drone and Camera
   document.querySelectorAll("section.panel > h2").forEach(h => {
     const sec = h.parentElement;
     if (h.firstChild && h.firstChild.nodeType === 3 && h.firstChild.textContent.trim()) {
@@ -1698,7 +1697,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
     h.appendChild(b);
     const set = c => { sec.classList.toggle("collapsed", c); b.setAttribute("aria-expanded", !c); b.setAttribute("aria-label", `${c ? "Expand" : "Collapse"} ${name}`); };
-    set(name !== "Flight");
+    set(name !== "Drone and Camera");
     h.addEventListener("click", e => {
       if (!matchMedia("(max-width: 700px)").matches) return;                         // phones only
       if (e.target.closest("button") && e.target.closest("button") !== b) return;   // e.g. Copy
