@@ -1526,7 +1526,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   const LM_HELP = NATIVE
     ? "Opens a live light meter. Point the camera at ground like your site (not the sky), tap to meter a spot, then Use reading. Nothing is photographed or saved."
     : IOS && HOSTED
-    ? "Opens a live light meter. Point the camera at ground like your site (not the sky), then Use reading. Nothing is photographed or saved."
+    ? "Opens the camera. Point it at ground like your site (not the sky) and tap Measure light. The camera's exposure settings are read, then the shot is discarded. Nothing is saved or uploaded."
     : IOS
     ? "On iPhone the camera meter works in the hosted Droneland app" + (HOSTED_URL ? " (" + HOSTED_URL + ")" : "") + ", not inside Claude."
     : "Opens your camera. Photograph ground like your site (not the sky). The app reads the camera's exposure settings, then discards the photo. It is not saved, kept or uploaded.";
@@ -1578,10 +1578,13 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       `${src || "Camera"} live reading f/${fmt(N, 1)}, ${t >= 1 ? fmt(t, 1) + " s" : "1/" + Math.round(1 / t) + " s"}, ISO ${Math.round(iso)}`);
   };
 
-  // ---- Built-in live light meter (hosted, iPhone): reads the camera's own auto-exposure through the
-  // browser while the view is live. No frame is captured or kept; the camera stops when it closes.
-  const LV_N = 1.78;                                      // main-camera aperture on recent iPhones (browsers don't report it)
+  // ---- Built-in light meter (hosted, iPhone). Safari strips exposure data from file-input photos, but
+  // ImageCapture.takePhoto() (iOS 18.4+) hands the page the camera's own JPEG with its EXIF intact.
+  // The shot exists only in memory long enough to read shutter, aperture and ISO, then is dropped.
+  // It never goes to the photo library and is never uploaded. Live track settings are used if offered.
+  const LV_N = 1.78;                                      // main-camera aperture on recent iPhones (fallback only)
   const shutS = t => t >= 1 ? fmt(t, 1) + " s" : "1/" + Math.round(1 / t) + " s";
+  const iosVer = (navigator.userAgent.match(/OS (\d+)[_.](\d+)/) || []).slice(1).join(".");
   let lv = null;
   function lvClose() {
     if (!lv) return;
@@ -1595,21 +1598,48 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     return { t: s.exposureTime > 0 ? s.exposureTime / 10000 : NaN,   // spec unit: 100 µs
              iso: s.iso, N: s.aperture > 0 ? s.aperture : LV_N, keys: Object.keys(s) };
   }
+  // One in-memory shot -> {ev, how} or {fail: reason}
+  async function lvShot(track) {
+    if (typeof ImageCapture !== "function") return { fail: "no-ic" };
+    let blob = null, buf = null, x = null;
+    try {
+      blob = await new ImageCapture(track).takePhoto();
+      buf = await readFile(blob);
+      x = readExif(buf);
+    } catch (e) { return { fail: "shot", err: (e && e.name) || "error" }; }
+    finally { blob = null; buf = null; }                  // ephemeral: only the numbers survive
+    if (x && x.t > 0 && x.N > 0 && x.iso > 0)
+      return { ev: Math.log2(x.N * x.N / x.t) - Math.log2(x.iso / 100),
+               how: `iPhone camera f/${fmt(x.N, 1)}, ${shutS(x.t)}, ISO ${Math.round(x.iso)}` };
+    if (x && isFinite(x.bv)) return { ev: x.bv + 5, how: "iPhone camera brightness value" };
+    return { fail: "no-exif", tags: x ? x.tags : 0 };
+  }
   async function lvOpen() {
     const el = document.createElement("div");
-    el.className = "lv"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Live light meter");
+    el.className = "lv"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Camera light meter");
     el.innerHTML = '<video playsinline muted autoplay></video><div class="lv-top">Point at ground like your site, not the sky.</div>'
       + '<div class="lv-panel"><div class="lv-ev" aria-live="polite">Starting camera…</div><div class="lv-det"></div>'
-      + '<div class="lv-btns"><button type="button" class="lv-cancel">Cancel</button><button type="button" class="lv-use" disabled>Use reading</button></div>'
-      + '<div class="lv-note">Live view only. Nothing is photographed or saved.</div></div>';
+      + '<div class="lv-btns"><button type="button" class="lv-cancel">Cancel</button><button type="button" class="lv-use" disabled>Measure light</button></div>'
+      + '<div class="lv-note">Reads the camera\'s exposure settings. No photo is saved or uploaded.</div></div>';
     document.body.appendChild(el); document.body.style.overflow = "hidden";
-    const me = lv = { el, timer: 0, stream: null, last: null };
+    const me = lv = { el, timer: 0, stream: null, last: null, track: null };
     const q = c => el.querySelector(c);
+    const say = (big, small) => { q(".lv-ev").textContent = big; q(".lv-det").textContent = small; };
     q(".lv-cancel").onclick = lvClose;
     el.addEventListener("keydown", e => { if (e.key === "Escape") lvClose(); });
-    q(".lv-use").onclick = () => {
-      const r = me.last; lvClose();
-      if (r) applyEv(r.ev, `iPhone camera live reading f/${fmt(r.N, 1)}, ${shutS(r.t)}, ISO ${Math.round(r.iso)}`);
+    q(".lv-use").onclick = async () => {
+      if (lv !== me || !me.track) return;
+      const btn = q(".lv-use"); btn.disabled = true; btn.textContent = "Measuring…";
+      const r = await lvShot(me.track);
+      if (lv !== me) return;
+      if (isFinite(r.ev)) { lvClose(); applyEv(r.ev, r.how); return; }
+      if (me.last) { const l = me.last; lvClose(); applyEv(l.ev, `iPhone camera live reading f/${fmt(l.N, 1)}, ${shutS(l.t)}, ISO ${Math.round(l.iso)}`); return; }
+      btn.disabled = false; btn.textContent = "Try again";
+      const keys = lvRead(me.track).keys.join(", ") || "nothing";
+      say("No exposure data",
+        r.fail === "no-ic" ? `This browser can't take an in-camera shot (needs iOS 18.4 or later${iosVer ? "; this is iOS " + iosVer : ""}). Set the light with the slider instead.`
+        : r.fail === "shot" ? `The camera couldn't take the shot (${r.err}). Hold steady and try again.`
+        : `The shot came back without exposure settings (${r.tags} other metadata field${r.tags === 1 ? "" : "s"}). Camera reported: ${keys}.`);
     };
     q(".lv-cancel").focus();
     try {
@@ -1617,28 +1647,22 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       if (lv !== me) { stream.getTracks().forEach(t => t.stop()); return; }
       me.stream = stream;
       const v = q("video"); v.srcObject = stream; v.play().catch(() => {});
-      const track = stream.getVideoTracks()[0];
-      let tries = 0;
-      me.timer = setInterval(() => {
+      me.track = stream.getVideoTracks()[0];
+      say("Ready", "Hold the phone steady, then tap Measure light.");
+      q(".lv-use").disabled = false;
+      me.timer = setInterval(() => {                      // bonus: live readout if the browser shares it
         if (lv !== me) return;
-        const r = lvRead(track); tries++;
+        const r = lvRead(me.track);
         if (r.t > 0 && r.iso > 0) {
           me.last = { ...r, ev: Math.log2(r.N * r.N / r.t) - Math.log2(r.iso / 100) };
-          q(".lv-ev").textContent = "EV " + fmt(me.last.ev, 1);
-          q(".lv-det").textContent = `f/${fmt(r.N, 1)} · ${shutS(r.t)} · ISO ${Math.round(r.iso)}`;
-          q(".lv-use").disabled = false;
-        } else if (tries > 10 && !me.last) {
-          clearInterval(me.timer);
-          q(".lv-ev").textContent = "No exposure data";
-          q(".lv-det").textContent = "This browser shows the camera but doesn't share its shutter speed and ISO, so it can't measure light. Camera reported: " + (r.keys.join(", ") || "nothing") + ".";
+          say("EV " + fmt(me.last.ev, 1), `f/${fmt(r.N, 1)} · ${shutS(r.t)} · ISO ${Math.round(r.iso)}`);
         }
       }, 300);
     } catch (e) {
       if (lv !== me) return;
-      q(".lv-ev").textContent = "Camera unavailable";
-      q(".lv-det").textContent = e && e.name === "NotAllowedError"
+      say("Camera unavailable", e && e.name === "NotAllowedError"
         ? "Camera access was blocked. In Safari tap aA › Website Settings › Camera › Allow, then try again."
-        : "The camera couldn't be opened here (" + ((e && e.name) || "error") + ").";
+        : "The camera couldn't be opened here (" + ((e && e.name) || "error") + ").");
     }
   }
   $("lm-sc").addEventListener("click", () => {
