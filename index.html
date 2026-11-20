@@ -742,7 +742,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
              rules: "<b>Zenmuse P1</b> with the <b>35 or 50 mm</b> lens · <b>50 m AGL or higher</b> to clear trees and power lines · ISO up to <b>1,600</b>." },
     ndvi:  { name: "NDVI scan", lower: "NDVI scan", drones: ["m3m"], isoCap: 2000, altMin: 20, alt: 30, why: "normal NDVI height", cricket: true,
              rules: "<b>Mavic 3 Multispectral</b>, RGB and multispectral together · <b>20 m AGL or higher</b> (lower for turf cricket pitches) · ISO up to <b>2,000</b>." },
-    weed:  { name: "Weed mapping", lower: "weed mapping", drones: ["p1", "phaseone"], lenses: { p1: [50], phaseone: [150] }, preset: "p1", lens: 50, isoCap: 800, alt: 20, altFor: { p1: 20, phaseone: 60 }, relief: 2, finest: true,
+    weed:  { name: "Weed mapping", lower: "weed mapping", drones: ["p1", "phaseone"], lenses: { p1: [50], phaseone: [150] }, preset: "p1", lens: 50, isoCap: 800, alt: 20, altFor: { p1: 20, phaseone: 80 }, relief: 2, finest: true,
              rules: "<b>Zenmuse P1</b> with the <b>50 mm</b> lens, or the <b>Phase One iXM-GS120</b> with the <b>150 mm</b> lens · fly as low as blur and the camera allow for the <b>finest GSD</b> · ISO up to <b>800</b>." },
     other: { name: "Other", rules: "No mission rules: any drone, your own altitude and ISO limits." },
   };
@@ -991,7 +991,9 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   function sharpness(N, c) {
     const motion = c.blurPx;
     const stops = Math.max(0, 2 * Math.log2(N / c.fmax));
-    const lens = 1.2 * Math.pow(0.75, stops);                                // aberrations: softest wide open, ease with every stop down
+    // Aberrations: softest wide open, easing with every stop down. c.ab is the wide-open edge softness in px:
+    // 1.2 for typical drone lenses; Phase One RS/RSM metric lenses are designed to be sharp wide open (0.5).
+    const lens = (c.ab || 1.2) * Math.pow(0.75, stops);
     // Diffraction grows with f-number and matters more on small pixels; 0.7 × the Airy FWHM (green light) as effective blur
     const diffraction = 0.7 * 1.03 * 0.00055 * N / c.pitch;
     const s = c.alt * 1000, d = Math.max(c.alt - c.relief, c.alt * 0.1) * 1000; // focus on ground, tallest feature closer
@@ -1123,7 +1125,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     $("spdhint").className = "fhint" + (v > maxSpdBlur ? " bad" : "");
 
     // ---- Sharpness
-    const cam = { blurPx, pitch, fmax, f, alt, relief };
+    const cam = { blurPx, pitch, fmax, f, alt, relief, ab: p && kindOf(p) === "phaseone" ? 0.5 : 1.2 };
     const sh0 = sharpness(N, cam);
     const exposable = apList.filter(n => isoFor(n, ss, L) <= isoLimit() * 1.12);
     const best = (exposable.length ? exposable : [apList[0]]).map(n => sharpness(n, cam)).reduce((a, b) => b.total < a.total ? b : a);
@@ -1550,7 +1552,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   sel.addEventListener("change", () => {
     applyPreset();
     const a0 = M().altFor && preset() && M().altFor[kindOf(preset())];   // weed mapping: each camera's starting height
-    if (a0) { $("alt").value = imp() ? Math.round(a0 / FT) : a0; calc(); recommend(); } else calc();
+    // Recommend after this change event has bubbled, so the "settings changed" reset doesn't wipe its note
+    if (a0) { $("alt").value = imp() ? Math.round(a0 / FT) : a0; calc(); setTimeout(recommend, 0); } else calc();
   });
   $("lens").addEventListener("change", () => { applyLens(); calc(); });
   $("ap-r").addEventListener("input", fillShutters);
