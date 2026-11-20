@@ -359,6 +359,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   .colbtn { width: 36px; height: 36px; margin: -8px -8px -8px 0; }
   .lmeter { display: block; }                                          /* camera light meter */
   .ph-only { display: inline; }
+  .guard.good .cause { display: none; }                               /* safe: the headline and limits are enough */
   .sub { display: none; }                                             /* the title says enough on a phone */
   h1 { font-size: 22px; line-height: 1.15; }
   .wrap { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
@@ -1120,7 +1121,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const cause = `${eq} mm at ${len(alt, 0)} gives ${gNow} ${gNowU}. At ${spdS(v)} and ${shutterS(t)} the drone moves ${len(v * t, 3)} during exposure: <b>${fmt(blurPx, 2)} px</b> of blur (limit ${bl} px).`;
     if (lvl === "good") {
       guard.innerHTML = `<div class="gh">Motion blur safe <span>${fmt(blurPx, 2)} / ${bl} px</span></div>
-        <p>${cause}</p>
+        <p class="cause">${cause}</p>
         <p>Stays safe up to <b>${spdS(maxSpdBlur)}</b> at this altitude, or down to <b>${len(minAltBlur, 0)}</b> AGL at this speed.</p>`;
     } else {
       const fixes = [
@@ -1779,6 +1780,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     $("lm-age").innerHTML = has ? `Measured ${clock(lightAt)} · ${ago}` + (stale ? " · re-measure" : "")
       : `Preset estimate<span class="ph-only"> · measure for real light</span>`;
     document.querySelectorAll(".lm-t").forEach(t => t.textContent = has ? "Re-measure light" : "Measure light");
+    if (stale && /\bok\b/.test($("lm-msg").className)) $("lm-msg").className = "hint";
   }
   function applyEv(ev, how, at) {
     const msg = $("lm-msg");
