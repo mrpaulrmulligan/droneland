@@ -183,6 +183,13 @@ svg.donut text { font: 500 22px var(--f-mono); fill: var(--ink); }
 .g-use { align-self: flex-start; }
 .subh { font: 700 14px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); margin: 18px 0 14px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
 .subh::before { content: ""; width: 4px; height: 12px; border-radius: 1px; background: var(--accent); margin-right: 2px; flex: none; }
+.mis-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.mis-pick button { font: 600 14px var(--f-body); padding: 10px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--muted); cursor: pointer; }
+.mis-pick button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 -3px 0 var(--accent); }
+.mis-opt { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.mis-opt input { width: 18px; height: 18px; accent-color: var(--accent); }
+#mis-rules { margin: 10px 0 0; }
+#mis-rules b { color: var(--ink); font-weight: 600; }
 .site { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px; }
 .site-l { font-size: 13px; font-weight: 500; color: var(--muted); }
 .site-pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
@@ -365,6 +372,18 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   <div class="grid">
     <!-- INPUTS -->
     <div class="col">
+      <section class="panel" id="mission-p">
+        <h2>Mission</h2>
+        <div class="mis-pick" role="group" aria-label="Mission type">
+          <button type="button" data-mis="site" aria-pressed="false">Site establishment</button>
+          <button type="button" data-mis="ndvi" aria-pressed="false">NDVI scan</button>
+          <button type="button" data-mis="weed" aria-pressed="false">Weed mapping</button>
+          <button type="button" data-mis="other" aria-pressed="false">Other</button>
+        </div>
+        <label class="mis-opt" id="cricket-l" hidden><input type="checkbox" id="cricket"> Turf cricket pitch (low-altitude scan)</label>
+        <p class="hint" id="mis-rules" aria-live="polite"></p>
+      </section>
+
       <section class="panel">
         <h2>Drone and Camera</h2>
         <div class="fields">
@@ -552,6 +571,12 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         <div class="status" id="status"></div>
       </section>
 
+      <section class="panel" id="msp" hidden>
+        <h2><span>Multispectral camera</span><span class="est">auto exposure</span></h2>
+        <table><tbody id="ms-rows"></tbody></table>
+        <p class="hint" id="ms-note"></p>
+      </section>
+
       <div class="big" id="big"></div>
 
       <section class="panel" id="pilot">
@@ -658,6 +683,12 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   // fmax/fmin = widest/narrowest f-number; smax = fastest mechanical shutter (1/x s); isoMax = highest photo ISO.
   // wide: mechanical-shutter cap at apertures wider than `below` (P1 rates 1/2000 s only at f/5.6 or narrower).
     { id: "m3e", name: "DJI Mavic 3 Enterprise",  sw: 17.3, sh: 13.0, mp: 20, fl: 12.29, eq: 24, fmax: 2.8, fmin: 11, smax: 2000, isoMax: 6400,  mi: 0.7, payload: "Mavic 3E wide camera", mechToggle: true, elevOpt: true },
+    // Mavic 3M: RGB main camera plus four 5 MP multispectral cameras (G, R, RE, NIR) that fire together.
+    // MS: 1/2.8" 2592 × 1944, 61.2° × 48.1° FOV (4.34 mm), f/2.0 fixed, electronic shutter 1/30–1/12800 s with auto
+    // exposure, timed shots every 2 s or longer. Overlap and capture interval follow the narrower, slower MS cameras.
+    { id: "m3m", name: "DJI Mavic 3 Multispectral", sw: 17.3, sh: 13.0, mp: 20, fl: 12.29, eq: 24, fmax: 2.8, fmin: 11, smax: 2000, isoMax: 6400, mi: 0.7,
+      payload: "Mavic 3M RGB + multispectral", mechToggle: true, elevOpt: true,
+      ms: { sw: 5.12, sh: 3.84, px: 2592, pxh: 1944, fl: 4.34, N: 2.0, smax: 12800, smin: 30, mi: 2, bands: "Green, Red, Red Edge, NIR" } },
     { id: "m4e", name: "DJI Matrice 4E (wide)",   sw: 17.3, sh: 13.0, mp: 20, fl: 12.29, eq: 24, fmax: 2.8, fmin: 11, smax: 2000, isoMax: 25600, mi: 0.5, payload: "Matrice 4E wide camera", mechToggle: true, elevOpt: true },
     { id: "p1",  name: "DJI Zenmuse P1",          sw: 35.9, sh: 24.0, mp: 45, fl: 35,    eq: 35, smax: 2000, isoMax: 25600, mi: 0.7, payload: "Zenmuse P1", p1: true,
       wide: { below: 5.6, smax: 1600 },
@@ -703,7 +734,20 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   ];
   const $ = id => document.getElementById(id);
   const FT = 0.3048, MPH = 0.44704, HA_AC = 2.47105;
-  const state = { units: "metric" };
+  const state = { units: "metric", mission: "site" };
+  // Droneland mission types: each sets the drone, lens, ISO ceiling and altitude rule, in that order of decision
+  const MISSIONS = {
+    site:  { name: "Site establishment", lower: "site establishment", drones: ["p1"], lenses: [35, 50], lens: 35, isoCap: 1600, altMin: 50, alt: 60,
+             why: "clears trees and power lines",
+             rules: "<b>Zenmuse P1</b> with the <b>35 or 50 mm</b> lens · <b>50 m AGL or higher</b> to clear trees and power lines · ISO up to <b>1,600</b>." },
+    ndvi:  { name: "NDVI scan", lower: "NDVI scan", drones: ["m3m"], isoCap: 2000, altMin: 20, alt: 30, why: "normal NDVI height", cricket: true,
+             rules: "<b>Mavic 3 Multispectral</b>, RGB and multispectral together · <b>20 m AGL or higher</b> (lower for turf cricket pitches) · ISO up to <b>2,000</b>." },
+    weed:  { name: "Weed mapping", lower: "weed mapping", preset: "p1", lens: 50, isoCap: 800, alt: 20, relief: 2, finest: true,
+             rules: "Detail comes first: fly as low as blur and the camera allow for the <b>finest GSD</b> · ISO up to <b>800</b> · any drone." },
+    other: { name: "Other", rules: "No mission rules: any drone, your own altitude and ISO limits." },
+  };
+  const M = () => MISSIONS[state.mission] || MISSIONS.other;
+  const altFloor = () => M().altMin && !(M().cricket && $("cricket").checked) ? M().altMin : 0;
   const defaults = { preset: "m3e", alt: 80, spd: 4, fo: 80, so: 70, bl: 0.5, area: 40, ss: 2000, ap: 5.6, relief: 5, orient: "across", mp: 20, feq: 24, smax: 2000, iso: 100, isomax: 6400, isocap: 640, isomin: 100, light: "clear" };
   let apList = [], ssList = [], isoList = [], last = null;
 
@@ -713,7 +757,12 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   function buildPresetOptions() {
     const cur = sel.value;
     sel.innerHTML = "";
-    PRESETS.filter(p => p.id !== "custom").forEach(p => sel.add(new Option(p.name, p.id)));
+    const only = M().drones;
+    PRESETS.filter(p => p.id !== "custom" && (!only || only.includes(p.id))).forEach(p => sel.add(new Option(p.name, p.id)));
+    if (only) {                                       // mission fixes the drone: no saved or custom cameras
+      sel.value = only.includes(cur) ? cur : only[0];
+      return sel.value !== cur;
+    }
     if (saved.length) {
       const g = document.createElement("optgroup"); g.label = "Saved profiles";
       saved.forEach(p => g.appendChild(new Option(p.name, p.id)));
@@ -842,8 +891,9 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       // Keep the chosen lens when the same camera is refreshed (e.g. a lens was just added)
       const lens = $("lens"), prev = state.lensFor === p.id ? (state.selectLens ?? lens.value) : null;
       lens.innerHTML = "";
-      p.lenses.forEach(l => lens.add(new Option(l.name, l.mm)));
-      lens.value = prev != null && p.lenses.some(l => String(l.mm) === String(prev)) ? prev : p.fl;
+      const ls = p.lenses.filter(l => !(M().lenses && p.id === "p1") || M().lenses.includes(l.mm));
+      ls.forEach(l => lens.add(new Option(l.name, l.mm)));
+      lens.value = prev != null && ls.some(l => String(l.mm) === String(prev)) ? prev : ls.some(l => l.mm === p.fl) ? p.fl : ls[0].mm;
       state.lensFor = p.id; state.selectLens = null;
     }
     applyLens();
@@ -958,7 +1008,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const f = p ? (p.lenses ? +$("lens").value : p.fl) : eq * diag / 43.27;
     const fmax = +$("fmax").value, mi = +$("mi").value, N = getAp();
     const ss = getSs(), iso = getIso(), L = lightEv();
-    const isoQ = iso <= Math.max(200, isoList[0]) ? ["good", "optimal"] : iso < 800 ? ["good", "low grain"] : iso <= 1600 ? ["warn", "grainy"] : ["bad", "very grainy"];
+    const capM = M().isoCap || 0, mName = M().lower || "mission";
+    const isoQ = capM && iso > capM ? ["bad", "over mission limit"] : iso <= Math.max(200, isoList[0]) ? ["good", "optimal"] : iso < 800 ? ["good", "low grain"] : iso <= 1600 ? ["warn", "grainy"] : ["bad", "very grainy"];
     $("isov").innerHTML = `${iso.toLocaleString()}<span class="isoq ${isoQ[0]}">${isoQ[1]}</span>`;
     $("apv").textContent = `f/${N}`;
     $("ssv").textContent = `1/${ss.toLocaleString()} s`;
@@ -981,16 +1032,28 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const gsd = alt * pitch / f;
     const fpW = alt * sw / f, fpH = alt * sh / f;
     const across = longAcross ? fpW : fpH, along = longAcross ? fpH : fpW;
+    // Mavic 3M: the multispectral cameras are narrower and slower than the RGB camera, so they set
+    // photo spacing, line spacing and the capture interval. Their exposure is automatic: estimated here
+    // as the base-gain shutter for this light at f/2.0, within the 1/30–1/12800 s range.
+    const ms = p && p.ms;
+    const msPitch = ms ? ms.sw / ms.px : 0, msGsd = ms ? alt * msPitch / ms.fl : 0;
+    const msAcross = ms ? alt * (longAcross ? ms.sw : ms.sh) / ms.fl : 0, msAlong = ms ? alt * (longAcross ? ms.sh : ms.sw) / ms.fl : 0;
+    const acrossS = ms ? Math.min(across, msAcross) : across, alongS = ms ? Math.min(along, msAlong) : along;
+    const miE = ms ? Math.max(mi, ms.mi) : mi;
+    const msNeed = ms ? ms.N * ms.N / Math.pow(2, L) : 0;
+    const msT = ms ? Math.min(1 / ms.smin, Math.max(1 / ms.smax, msNeed)) : 0;
+    const msGain = ms ? msNeed / msT : 1;
 
     const t = 1 / ss;
     const blurPx = v * t / gsd;
-    const photoSpacing = along * (1 - fo);
-    const lineSpacing = across * (1 - so);
+    const photoSpacing = alongS * (1 - fo);
+    const lineSpacing = acrossS * (1 - so);
     const interval = photoSpacing / v;
-    const maxSpdInterval = photoSpacing / mi;
+    const maxSpdInterval = photoSpacing / miE;
     const maxSpdBlur = bl * gsd / t;
     const slowestShutter = bl * gsd / v;
-    const maxSpd = Math.min(maxSpdInterval, maxSpdBlur);
+    const msBlur = ms ? v * msT / msGsd : 0, maxSpdMs = ms ? bl * msGsd / msT : Infinity;
+    const maxSpd = Math.min(maxSpdInterval, maxSpdBlur, maxSpdMs);
     const rate = lineSpacing * v;
     const photosPerHa = 10000 / (photoSpacing * lineSpacing);
     const flightS = areaM2 / rate * 1.2;
@@ -1024,8 +1087,22 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         <p>${cause}</p>
         <p>Any one of these fixes it:</p><ul>${fixes.map(x => `<li>${x}</li>`).join("")}</ul>`;
     }
-    $("althint").textContent = `Blur-safe at ${len(minAltBlur, 0)} or higher`;
-    $("althint").className = "fhint" + (alt < minAltBlur ? " bad" : "");
+    // Weed mapping: lowest height where blur and the capture interval both still work at this speed
+    const altInt = v * miE / ((alongS / alt) * (1 - fo));
+    const finestAlt = Math.max(minAltBlur, altInt);
+    if (altFloor() && alt < altFloor() - 0.01) {
+      $("althint").textContent = `${M().name}: fly ${len(altFloor(), 0)} or higher (${M().why})`;
+      $("althint").className = "fhint bad";
+    } else if (M().finest) {
+      const [fg, fgU] = gsdS(Math.ceil(finestAlt) * pitch / f);
+      $("althint").textContent = alt < finestAlt
+        ? `Too low for this speed: ${len(Math.ceil(finestAlt), 0)} (${fg} ${fgU}) is the lowest that works. Slow down to fly lower.`
+        : `Finest detail at this speed: ${len(Math.ceil(finestAlt), 0)} for ${fg} ${fgU}`;
+      $("althint").className = "fhint" + (alt < finestAlt ? " bad" : "");
+    } else {
+      $("althint").textContent = `Blur-safe at ${len(minAltBlur, 0)} or higher`;
+      $("althint").className = "fhint" + (alt < minAltBlur ? " bad" : "");
+    }
     $("spdhint").textContent = `Blur-safe up to ${spdS(maxSpdBlur)}`;
     $("spdhint").className = "fhint" + (v > maxSpdBlur ? " bad" : "");
 
@@ -1051,7 +1128,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       expMsg = `Overexposed by ${stopsS(under)}`;
       expFix = iso > isoList[0] ? `Lower ISO to ${isoCeil(Math.max(isoList[0], need)).toLocaleString()}, or stop down.` : `Stop down or use a faster shutter.`;
     }
-    $("expo").innerHTML = `<span class="pill ${expLvl}">${expMsg}</span>${expFix ? `<span class="fhint">${expFix}</span>` : ""}${iso >= 800 ? `<span class="fhint">ISO ${iso.toLocaleString()} adds visible grain that hides fine ground detail. Aim for the lowest ISO: open the aperture or use a slower shutter within the blur limit.</span>` : ""}`;
+    $("expo").innerHTML = `<span class="pill ${expLvl}">${expMsg}</span>${expFix ? `<span class="fhint">${expFix}</span>` : ""}${(capM ? iso > capM : iso >= 800) ? `<span class="fhint">ISO ${iso.toLocaleString()}${capM ? ` is over the ${mName} limit of ${capM.toLocaleString()} and` : ""} adds visible grain that hides fine ground detail. Aim for the lowest ISO: open the aperture or use a slower shutter within the blur limit.</span>` : ""}`;
     const st = sh0.stage;
     $("dn").setAttribute("stroke-dasharray", `${(sh0.score / 100 * 263.9).toFixed(1)} 264`);
     $("dn").setAttribute("stroke", `var(--${st.key})`);
@@ -1110,9 +1187,14 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       : ["bad", `Blur ${fmt(blurPx, 2)} px — NO-GO`]);
     checks.push([st.key === "s5" || st.key === "s4" ? "good" : st.key === "s3" ? "warn" : "bad", `Sharpness ${st.label.toLowerCase()} (${sh0.score}%)`]);
     checks.push([expLvl, expMsg]);
-    if (iso >= 800) checks.push([iso > 1600 ? "bad" : "warn", `ISO ${iso.toLocaleString()} — visible grain`]);
-    checks.push(interval >= mi ? ["good", `Trigger every ${fmt(interval, 2)} s — camera keeps up`]
-      : ["bad", `Needs ${fmt(interval, 2)} s interval — camera min is ${mi} s`]);
+    if (capM) { if (iso > capM) checks.push(["bad", `ISO ${iso.toLocaleString()} — over the ${capM.toLocaleString()} limit`]); }
+    else if (iso >= 800) checks.push([iso > 1600 ? "bad" : "warn", `ISO ${iso.toLocaleString()} — visible grain`]);
+    if (ms) checks.push(msBlur <= bl ? ["good", `Multispectral blur ${fmt(msBlur, 2)} px — within limit`]
+      : ["bad", `Multispectral blur ${fmt(msBlur, 2)} px — over ${bl} px`]);
+    checks.push(interval >= miE ? ["good", `Trigger every ${fmt(interval, 2)} s — ${ms ? "both cameras keep" : "camera keeps"} up`]
+      : ["bad", `Needs ${fmt(interval, 2)} s interval — ${ms ? "multispectral" : "camera"} min is ${miE} s`]);
+    const floor = altFloor();
+    if (floor && alt < floor - 0.01) checks.push(["warn", `Below the ${len(floor, 0)} ${mName} minimum`]);
     if (alt > 121.92) checks.push(["warn", `Altitude above 120 m / 400 ft AGL`]);
     const rolling = p ? !!p.electronic : $("stype").value === "rolling";
     if (rolling) checks.push(["warn", "Electronic shutter — rolling-shutter distortion"]);
@@ -1123,14 +1205,16 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       ["GSD", `${gNow}<small>${gNowU}</small>`, `footprint ${len(across, 0)} × ${len(along, 0)}`],
       ["Motion blur", `${fmt(blurPx, 2)}<small>px</small>`, `at ${shutterS(t)}`],
       ["Trigger interval", `${fmt(interval, 2)}<small>s</small>`, `every ${len(photoSpacing)}`],
-      ["Max safe speed", `${imp() ? fmt(maxSpd / MPH, 1) : fmt(maxSpd, 1)}<small>${imp() ? "mph" : "m/s"}</small>`, maxSpdBlur < maxSpdInterval ? "limited by blur" : "limited by interval"],
+      ["Max safe speed", `${imp() ? fmt(maxSpd / MPH, 1) : fmt(maxSpd, 1)}<small>${imp() ? "mph" : "m/s"}</small>`, maxSpd === maxSpdInterval ? "limited by interval" : maxSpd === maxSpdMs ? "limited by multispectral blur" : "limited by blur"],
     ].map(([k, v2, s2]) => `<div><div class="k">${k}</div><div class="v">${v2}</div><div class="s">${s2}</div></div>`).join("");
 
     // ---- DJI Pilot 2 settings (Mapping mission), from the current calculator values
     const warnings = [];
     if (lvl !== "good") warnings.push("motion blur");
     if (expLvl !== "good") warnings.push("exposure");
-    if (interval < mi) warnings.push("trigger interval");
+    if (interval < miE) warnings.push("trigger interval");
+    if (capM && iso > capM) warnings.push("ISO");
+    if (ms && msBlur > bl) warnings.push("multispectral blur");
     if (st.min < 70) warnings.push("sharpness");
     $("pilotwarn").hidden = !warnings.length;
     $("pilotwarn").textContent = warnings.length ? `Fix ${warnings.join(", ")} before entering these settings.` : "";
@@ -1157,6 +1241,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       ["Aperture", `f/${N}`, "", "both"],
       ["ISO", iso.toLocaleString(), "in S mode, set Auto ISO with this as the max", "both"],
       p && p.mechToggle ? ["Mechanical shutter", "On", "", "both"] : null,
+      ms ? ["Cameras", "RGB + multispectral", `${ms.bands}; multispectral exposure is automatic`, "both"] : null,
+      ms ? ["Capture interval", `${fmt(Math.max(interval, miE), 1)} s or longer`, `multispectral minimum ${ms.mi} s`, "adv"] : null,
       ["Image format", "JPEG", "", "adv"],
       ["Dewarping", "Off", "let your processing software calibrate the lens", "adv"],
       p && p.p1 ? ["Focus", "First waypoint autofocus", "or calibrated infinity focus", "adv"] : null,
@@ -1218,21 +1304,37 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         row("Site size", `${len(site.l, 0)} × ${len(site.w, 0)}`, site.note),
         row("Flight lines", `${lines}`, `${len(lineSpacing, 1)} apart, flown along the long side`),
         row("Photos", shots.toLocaleString(), `${shotsPerLine} per line`),
-        row("Trigger interval", `${fmt(interval, 1)} s`, `every ${len(photoSpacing, 1)}${interval < mi ? ` · faster than the camera's ${mi} s minimum` : ""}`),
+        row("Trigger interval", `${fmt(interval, 1)} s`, `every ${len(photoSpacing, 1)}${interval < miE ? ` · faster than the camera's ${miE} s minimum` : ""}`),
         row("Flight time", secs < 60 ? `${Math.round(secs)} s` : secs < 600 ? `${Math.floor(secs / 60)} min ${Math.round(secs % 60)} s` : timeS(secs), "photo lines and turns; excludes takeoff, transit and landing"),
         row("Distance flown", len(dist, 0)),
       ].join("");
     }
 
-    drawSchematic(across, along, photoSpacing, lineSpacing);
-    $("schemlbl").textContent = `${len(across, 0)} × ${len(along, 0)} per frame`;
+    drawSchematic(acrossS, alongS, photoSpacing, lineSpacing);
+    $("schemlbl").textContent = `${len(acrossS, 0)} × ${len(alongS, 0)} per frame${ms ? " (multispectral)" : ""}`;
+
+    // ---- Multispectral camera (Mavic 3M)
+    $("msp").hidden = !ms;
+    if (ms) {
+      const [mg, mgU] = gsdS(msGsd);
+      $("ms-rows").innerHTML = [
+        row("GSD", `${mg} ${mgU}`, `RGB ${gNow} ${gNowU}`),
+        row("Footprint", `${len(msAcross, 0)} × ${len(msAlong, 0)}`, "across × along track; sets photo and line spacing"),
+        row("Shutter (estimated)", shutterS(msT), msGain > 1.05 ? `gain about ${fmt(msGain, 1)}× in this light` : "base gain at f/2.0"),
+        row("Motion blur", `${fmt(msBlur, 2)} px`, msBlur <= bl ? "within limit" : `over the ${bl} px limit`),
+        row("Capture interval", `${fmt(interval, 1)} s`, interval >= ms.mi ? `minimum ${ms.mi} s` : `faster than the ${ms.mi} s minimum`),
+        row("Bands", ms.bands),
+      ].join("");
+      $("ms-note").textContent = "The multispectral cameras fire with the RGB camera and set their own exposure, so these are estimates from the light setting. Overlap and speed limits use whichever camera is stricter.";
+    }
 
     // ---- Recommendations
     const adv = [];
-    if (interval < mi) adv.push(`At ${Math.round(fo * 100)}% front overlap the camera can't fire fast enough. Slow to ${spdS(maxSpdInterval)}, climb, or lower front overlap.`);
+    if (interval < miE) adv.push(`At ${Math.round(fo * 100)}% front overlap the ${ms ? "multispectral camera (every " + miE + " s)" : "camera"} can't fire fast enough. Slow to ${spdS(maxSpdInterval)}, climb, or lower front overlap.`);
     if (expLvl !== "good") adv.push(`${expMsg}. ${expFix}`);
     if (rolling) adv.push(`${p ? "The " + p.name : "This camera"} has no mechanical shutter. Its rolling shutter skews images as the drone moves, which reduces mapping accuracy. Fly slower than usual, and turn on rolling-shutter correction in your processing software (for example Pix4D, Agisoft Metashape or DJI Terra).`);
-    if (iso >= 800) adv.push(`ISO ${iso.toLocaleString()} adds grain. Lowest ISO gives the cleanest orthomosaic; keep it below 800 by opening the aperture or using a slower shutter within the blur limit.`);
+    if (capM && iso > capM) adv.push(`ISO ${iso.toLocaleString()} is over the ${mName} limit of ${capM.toLocaleString()}. Open the aperture, use a slower shutter within the blur limit, or wait for better light.`);
+    else if (!capM && iso >= 800) adv.push(`ISO ${iso.toLocaleString()} adds grain. Lowest ISO gives the cleanest orthomosaic; keep it below 800 by opening the aperture or using a slower shutter within the blur limit.`);
     if (sh0.score < 70) adv.push(`Sharpness is ${st.label.toLowerCase()}. ${worst[2]}`);
     if (N < 5.6 - 0.05 && apList.includes(5.6) && isoFor(5.6, ss, L) <= 400 * 1.12 && sharpness(5.6, cam).total < sh0.total)
       adv.push(`Stop down to f/5.6 for sharper edges; at ${shutterS(t)} it still exposes correctly in ${lightName} at ISO ${isoCeil(Math.max(isoList[0], isoFor(5.6, ss, L))).toLocaleString()}.`);
@@ -1241,6 +1343,15 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     if (!adv.length && blurPx <= bl) adv.push(`Settings are inside all limits. You have ${fmt((1 - v / maxSpd) * 100, 0)}% speed headroom before the first limit.`);
     if (!adv.length) adv.push(`Fix the motion blur shown at the top before flying.`);
     if (adv.length === 1 && adv[0].startsWith("Settings are inside")) adv[0] = adv[0].replace("all limits", "all limits and exposure is correct");
+    if (altFloor() && alt < altFloor() - 0.01) adv.unshift(`${M().name} flights should be ${len(altFloor(), 0)} AGL or higher (${M().why}).${M().cricket ? " For a low scan of a turf cricket pitch, tick Turf cricket pitch." : ""}`);
+    if (M().finest && alt >= finestAlt) {
+      const [fg, fgU] = gsdS(Math.ceil(finestAlt) * pitch / f);
+      adv.push(alt > finestAlt * 1.15
+        ? `For finer weed detail you can fly as low as <b>${len(Math.ceil(finestAlt), 0)}</b> (${fg} ${fgU}) at ${spdS(v)} and ${shutterS(t)}. Check for obstacles first.`
+        : `You're at about the finest detail ${spdS(v)} and ${shutterS(t)} allow. Fly slower or use a faster shutter to go lower.`);
+    }
+    if (ms && msGain > 1.05) adv.push(`Low light for the multispectral cameras: they need about ${fmt(msGain, 1)}× gain at 1/30 s, which adds noise to NDVI. Fly in brighter light if you can.`);
+    if (ms) adv.push(`Keep the Mavic 3M's sunlight sensor (on top) clear. It records changes in light so NDVI stays comparable between flights.`);
     $("advice").innerHTML = adv.map(a => `<li>${a}</li>`).join("");
   }
 
@@ -1445,6 +1556,30 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     });
   });
   $("rec").addEventListener("click", recommend);
+  // ---- Mission type: picks the drone and lens, ISO ceiling and starting altitude
+  function setMission(id, apply) {
+    state.mission = MISSIONS[id] ? id : "other";
+    try { localStorage.setItem("dl-mission", state.mission); } catch (e) {}
+    const m = M();
+    document.querySelectorAll(".mis-pick button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mis === state.mission));
+    $("cricket-l").hidden = !m.cricket;
+    $("mis-rules").innerHTML = m.rules;
+    buildPresetOptions();
+    if (apply) {
+      if (m.preset) sel.value = m.preset;
+      if (m.lens && sel.value === "p1") { state.lensFor = "p1"; state.selectLens = m.lens; }
+      if (m.alt) $("alt").value = imp() ? Math.round(m.alt / FT) : m.alt;
+      $("relief").value = imp() ? Math.round((m.relief || defaults.relief) / FT) : (m.relief || defaults.relief);   // grass is flat
+    }
+    $("isocap").value = m.isoCap || defaults.isocap;
+    $("rectext").textContent = "";
+    applyPreset(); calc();
+  }
+  document.querySelectorAll(".mis-pick button").forEach(b => b.addEventListener("click", () => { setMission(b.dataset.mis, true); recommend(); }));
+  $("cricket").addEventListener("change", calc);
+  let savedMission = null;
+  try { savedMission = localStorage.getItem("dl-mission"); } catch (e) {}
+  setMission(savedMission || "site", true);
   d0site();
   function d0site() {
     document.querySelectorAll(".site-pick button").forEach(b => b.addEventListener("click", () => {
@@ -1463,7 +1598,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const quick = $("wrap").dataset.mode === "quick";
     const keep = r => r[3] === "both" || r[3] === (quick ? "quick" : "adv");
     const lines = rs => rs.filter(keep).map(([k, v2]) => `  ${k}: ${v2}`);
-    return ["DJI Pilot 2 — mapping mission", "", "Route:", ...lines(state.pilotRows.route), "", "Camera:", ...lines(state.pilotRows.cam)].join("\n");
+    return [`DJI Pilot 2 — ${M().name === "Other" ? "mapping" : M().name.toLowerCase()} mission`, "", "Route:", ...lines(state.pilotRows.route), "", "Camera:", ...lines(state.pilotRows.cam)].join("\n");
   }
   function selectPilot() {
     const r = document.createRange(); r.selectNodeContents($("pilot"));
@@ -1688,7 +1823,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   document.addEventListener("click", e => { if (!$("set-pop").hidden && !e.target.closest(".setwrap")) setPop(false); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("set-pop").hidden) { setPop(false); $("set-open").focus(); } });
 
-  // ---- Collapsible sections (phones only): every card starts collapsed except Drone and Camera
+  // ---- Collapsible sections (phones only): every card starts collapsed except Mission and Drone and Camera
   document.querySelectorAll("section.panel > h2").forEach(h => {
     const sec = h.parentElement;
     if (h.firstChild && h.firstChild.nodeType === 3 && h.firstChild.textContent.trim()) {
@@ -1700,7 +1835,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
     h.appendChild(b);
     const set = c => { sec.classList.toggle("collapsed", c); b.setAttribute("aria-expanded", !c); b.setAttribute("aria-label", `${c ? "Expand" : "Collapse"} ${name}`); };
-    set(name !== "Drone and Camera");
+    set(name !== "Drone and Camera" && name !== "Mission");
     h.addEventListener("click", e => {
       if (!matchMedia("(max-width: 700px)").matches) return;                         // phones only
       if (e.target.closest("button") && e.target.closest("button") !== b) return;   // e.g. Copy
