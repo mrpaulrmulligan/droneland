@@ -257,8 +257,26 @@ input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); heigh
 .lv-btns .lv-use:disabled { opacity: .4; }
 .lv-note { font: 12px var(--f-body); color: #93a1ae; margin-top: 10px; }
 .lmios { display: none; text-decoration: none; }
-.ios .lmbtn { display: none; }
-.ios .lmbtn.lmios { display: flex; }
+.ios .lmbtn, .live .lmbtn { display: none; }
+.ios .lmbtn.lmios, .live .lmbtn.lmios { display: flex; }
+.lm-age { margin: 8px 0 0; font-weight: 500; }
+.lm-age.stale { color: var(--warn); }
+/* Tilt gauge in the camera meter: 0° = horizon, 90° = straight down */
+.lv-tilt { display: flex; align-items: baseline; justify-content: center; gap: 10px; }
+.lv-ang { font: 500 30px var(--f-mono); font-variant-numeric: tabular-nums; }
+.lv-tmsg { font: 500 15px var(--f-body); text-align: left; }
+.lv-gauge { position: relative; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, .18); margin: 10px auto 2px; max-width: 420px; }
+.lv-gauge i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; background: #e5484d; }
+.lv-gauge b { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #fff; }
+.lv-scale { display: flex; justify-content: space-between; max-width: 420px; margin: 0 auto; font: 11px var(--f-mono); color: #93a1ae; }
+.lv[data-tilt="bad"] .lv-ang, .lv[data-tilt="bad"] .lv-tmsg { color: #ff8a8d; }
+.lv[data-tilt="ok"] .lv-ang { color: #f6b26b; } .lv[data-tilt="ok"] .lv-gauge i { background: #f39a3d; }
+.lv[data-tilt="good"] .lv-ang { color: #5fd27a; } .lv[data-tilt="good"] .lv-gauge i { background: #3fb950; }
+.lv[data-tilt="none"] .lv-gauge, .lv[data-tilt="none"] .lv-scale, .lv[data-tilt="none"] .lv-ang { display: none; }
+.lv-aim { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border: 2px solid rgba(255, 255, 255, .7); border-radius: 50%; pointer-events: none; }
+.lv[data-tilt="good"] .lv-aim { border-color: #5fd27a; }
+/* One-tap re-measure on phones; sits above the floating readout bar when that is showing */
+.lmquick { display: none; }
 #lm-msg.ok { color: var(--good); } #lm-msg.warn { color: var(--warn); }
 #recnote:empty { display: none; }
 #rectext:empty { display: none; }
@@ -336,6 +354,14 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   .fs-x b small { font-size: 11px; color: var(--muted); margin-left: 2px; }
   .fs-x b.warn { color: var(--warn); } .fs-x b.bad { color: var(--bad); }
   .floatsharp > svg { order: 3; } .fs-txt { order: 4; }
+  .lmquick:not([hidden]) { display: flex; position: fixed; z-index: 31; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    align-items: center; gap: 8px; min-height: 46px; padding: 6px 14px 6px 12px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); box-shadow: 0 6px 20px rgba(0, 0, 0, .22); font: inherit; cursor: pointer; }
+  .fs-on .lmquick { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  .lmquick.stale { border-color: var(--warn); }
+  .lmq-t { display: flex; flex-direction: column; line-height: 1.1; text-align: left; }
+  .lmq-t b { font: 500 15px var(--f-mono); } .lmq-t small { font-size: 11px; color: var(--muted); }
+  .lmquick.stale small { color: var(--warn); }
   .fs-v b { font-size: 17px; } .fs-l { font-size: 11px; padding: 1px 5px; }
 }
 @media (pointer: coarse) { input[type="range"] { height: 36px; } }
@@ -472,13 +498,14 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
             <div class="lmeter">
               <label class="lmbtn" for="lm-file">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                Measure light with camera
+                <span class="lm-t">Measure light with camera</span>
               </label>
               <button type="button" class="lmbtn lmios" id="lm-sc">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                Measure light with camera
+                <span class="lm-t">Measure light with camera</span>
               </button>
               <input type="file" id="lm-file" accept="image/*" capture="environment" hidden>
+              <p class="hint lm-age" id="lm-age" hidden></p>
               <p class="hint" id="lm-msg"></p>
             </div>
           </div>
@@ -636,6 +663,10 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     <circle id="fs-ring" cx="50" cy="50" r="40" fill="none" stroke-width="14" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="0 252"/>
   </svg>
   <span class="fs-x"><span class="fs-k">GSD</span><b id="fs-gsd"></b></span><span class="fs-x"><span class="fs-k">Blur</span><b id="fs-blur"></b></span><span class="fs-txt"><span class="fs-k">Sharpness</span><span class="fs-v"><b id="fs-v"></b> <span id="fs-l" class="fs-l"></span></span></span>
+</button>
+
+<button type="button" class="lmquick" id="lm-quick" hidden aria-label="Measure light with the camera">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lmq-t"><b id="lmq-ev">Light</b><small id="lmq-age">Measure</small></span>
 </button>
 
 <div class="scrim" id="gsd-scrim" hidden></div>
@@ -1511,7 +1542,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     isocap: "The highest ISO the <b>Recommend</b> button will choose. Keep it <b>below 800</b> to avoid visible grain; lower is cleaner.",
     mi: "The <b>minimum capture interval</b>: how quickly the camera can take one photo after another. At high front overlap it limits how fast you can fly.",
     orient: "Which side of the photo runs <b>across the flight line</b>. Long side across track gives wider strips and fewer flight lines.",
-    light: "Roughly how bright the scene is, used to work out exposure. Darker conditions need a <b>wider aperture</b>, a <b>slower shutter</b> or a <b>higher ISO</b>. Clear midday sun (high sun, clear sky) is about EV 16 at ISO 100; ordinary bright sun about EV 15.",
+    light: "On phones, <b>Measure light with camera</b> reads the real light: aim straight down at the ground (at least 45°, ideally 90°) and it measures by itself. Light changes through the day, so re-measure before each flight; the floating <b>EV</b> button does it in one tap. Otherwise pick the closest preset: roughly how bright the scene is, used to work out exposure. Darker conditions need a <b>wider aperture</b>, a <b>slower shutter</b> or a <b>higher ISO</b>. Clear midday sun (high sun, clear sky) is about EV 16 at ISO 100; ordinary bright sun about EV 15.",
   };
   function infoBtn(key, name) {
     return `<button type="button" class="info" data-info="${key}" aria-expanded="${state.tip === key}" aria-label="About ${name}">i</button>`;
@@ -1687,8 +1718,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   const NATIVE = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lightmeter);
   const LM_HELP = NATIVE
     ? "Opens a live light meter. Point the camera at ground like your site (not the sky), tap to meter a spot, then Use reading. Nothing is photographed or saved."
-    : IOS && HOSTED
-    ? "Opens the camera. Point it at ground like your site (not the sky) and tap Measure light. The camera's exposure settings are read, then the shot is discarded. Nothing is saved or uploaded."
+    : HOSTED && (IOS || typeof ImageCapture === "function") && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+    ? "Opens the camera with a tilt gauge. Aim straight down at the ground (at least 45°, ideally 90°) and it measures by itself. The camera's exposure settings are read, then the shot is discarded. Nothing is saved or uploaded."
     : IOS
     ? "On iPhone the camera meter works in the hosted Droneland app" + (HOSTED_URL ? " (" + HOSTED_URL + ")" : "") + ", not inside Claude."
     : "Opens your camera. Photograph ground like your site (not the sky). The app reads the camera's exposure settings, then discards the photo. It is not saved, kept or uploaded.";
@@ -1722,9 +1753,31 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     }
     applyEv(ev, how);
   });
-  function applyEv(ev, how) {
+  // ---- Measured light: kept on this device so a long day of flights can re-check it quickly.
+  // Light changes through the day, so a reading older than LIGHT_STALE_MIN asks to be re-measured.
+  const LIGHT_KEY = "dl-light-v1", LIGHT_STALE_MIN = 30, LIGHT_KEEP_H = 3;
+  let lightAt = null;
+  const clock = ms => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  function lightUI() {
+    const has = measuredEv !== null && lightAt, mins = has ? Math.floor((Date.now() - lightAt) / 60000) : 0;
+    const stale = has && mins >= LIGHT_STALE_MIN;
+    const ago = mins < 1 ? "just now" : mins < 60 ? `${mins} min ago` : `${Math.floor(mins / 60)} h ${mins % 60} min ago`;
+    const age = $("lm-age");
+    age.hidden = !has;
+    age.className = "hint lm-age" + (stale ? " stale" : "");
+    if (has) age.textContent = `Measured EV ${fmt(measuredEv, 1)} at ${clock(lightAt)} (${ago}).` + (stale ? " Light changes through the day: re-measure before the next flight." : "");
+    document.querySelectorAll(".lm-t").forEach(t => t.textContent = has ? "Re-measure light" : "Measure light with camera");
+    const qb = $("lm-quick");
+    qb.classList.toggle("stale", !!stale);
+    $("lmq-ev").textContent = has ? `EV ${fmt(measuredEv, 1)}` : "Light";
+    $("lmq-age").textContent = has ? (stale ? `${ago} · re-measure` : ago) : "Measure";
+    qb.setAttribute("aria-label", has ? `Light EV ${fmt(measuredEv, 1)}, measured ${ago}. Re-measure with the camera.` : "Measure light with the camera");
+  }
+  function applyEv(ev, how, at) {
     const msg = $("lm-msg");
     measuredEv = Math.round(ev * 10) / 10;
+    lightAt = at || Date.now();
+    try { localStorage.setItem(LIGHT_KEY, JSON.stringify({ ev: measuredEv, how, at: lightAt })); } catch (e) {}
     const near = LIGHT_ORDER.reduce((a, b) => Math.abs(b.ev - ev) < Math.abs(a.ev - ev) ? b : a);
     $("light").value = LIGHT_ORDER.indexOf(near);         // thumb shows the closest preset; maths uses the measured EV
     $("rectext").textContent = "";
@@ -1732,6 +1785,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     msg.className = ev < LIGHT_ORDER[0].ev - 0.5 ? "hint warn" : "hint ok";
     msg.textContent = `${how}: ambient light about EV ${fmt(ev, 1)} (close to ${near.name.toLowerCase()}). Exposure checks now use this reading; move the slider to go back to the presets.`
       + (ev < LIGHT_ORDER[0].ev - 0.5 ? " Very low light: expect high ISO or a slow shutter." : "");
+    lightUI();
   }
   // Called by the iPhone app with the camera's live auto-exposure (offset: EV still to settle)
   window.dronelandApplyReading = (N, t, iso, offset, src) => {
@@ -1740,20 +1794,32 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       `${src || "Camera"} live reading f/${fmt(N, 1)}, ${t >= 1 ? fmt(t, 1) + " s" : "1/" + Math.round(1 / t) + " s"}, ISO ${Math.round(iso)}`);
   };
 
-  // ---- Built-in light meter (hosted, iPhone). Safari strips exposure data from file-input photos, but
-  // ImageCapture.takePhoto() (iOS 18.4+) hands the page the camera's own JPEG with its EXIF intact.
+  // ---- Built-in light meter (hosted). Safari strips exposure data from file-input photos, but
+  // ImageCapture.takePhoto() (iOS 18.4+, Chrome) hands the page the camera's own JPEG with its EXIF intact.
   // The shot exists only in memory long enough to read shutter, aperture and ISO, then is dropped.
   // It never goes to the photo library and is never uploaded. Live track settings are used if offered.
+  // A tilt gauge (device orientation) keeps the camera aimed at the ground: at least 45° below the horizon
+  // so no sky is metered, ideally 90° (nadir). Held at 80° or more for a second, it measures by itself.
   const LV_N = 1.78;                                      // main-camera aperture on recent iPhones (fallback only)
+  const TILT_MIN = 45, TILT_AUTO = 80, HOLD_MS = 1000;
+  const LIVE = HOSTED && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && (IOS || typeof ImageCapture === "function");
+  if (LIVE) $("wrap").classList.add("live");
   const shutS = t => t >= 1 ? fmt(t, 1) + " s" : "1/" + Math.round(1 / t) + " s";
   const iosVer = (navigator.userAgent.match(/OS (\d+)[_.](\d+)/) || []).slice(1).join(".");
+  const camName = IOS ? "iPhone camera" : "Phone camera";
+  // Degrees the back camera points below the horizon. It looks along the device's −z axis, whose
+  // vertical component is −cos(beta)·cos(gamma): flat on its back = 90° (nadir), upright = 0°.
+  const downAngle = e => e.beta == null || e.gamma == null ? NaN
+    : Math.asin(Math.max(-1, Math.min(1, Math.cos(e.beta * Math.PI / 180) * Math.cos(e.gamma * Math.PI / 180)))) * 180 / Math.PI;
   let lv = null;
   function lvClose() {
     if (!lv) return;
-    clearInterval(lv.timer);
-    if (lv.stream) lv.stream.getTracks().forEach(t => t.stop());
-    lv.el.remove(); lv = null; document.body.style.overflow = "";
-    $("lm-sc").focus();
+    const me = lv; lv = null;
+    clearInterval(me.timer); clearTimeout(me.noOriTimer);
+    window.removeEventListener("deviceorientation", me.onOri);
+    if (me.stream) me.stream.getTracks().forEach(t => t.stop());
+    me.el.remove(); document.body.style.overflow = "";
+    if (me.opener && me.opener.focus) me.opener.focus();
   }
   function lvRead(track) {
     const s = track.getSettings ? track.getSettings() : {};
@@ -1772,37 +1838,85 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     finally { blob = null; buf = null; }                  // ephemeral: only the numbers survive
     if (x && x.t > 0 && x.N > 0 && x.iso > 0)
       return { ev: Math.log2(x.N * x.N / x.t) - Math.log2(x.iso / 100),
-               how: `iPhone camera f/${fmt(x.N, 1)}, ${shutS(x.t)}, ISO ${Math.round(x.iso)}` };
-    if (x && isFinite(x.bv)) return { ev: x.bv + 5, how: "iPhone camera brightness value" };
+               how: `${camName} f/${fmt(x.N, 1)}, ${shutS(x.t)}, ISO ${Math.round(x.iso)}` };
+    if (x && isFinite(x.bv)) return { ev: x.bv + 5, how: `${camName} brightness value` };
     return { fail: "no-exif", tags: x ? x.tags : 0 };
   }
-  async function lvOpen() {
+  async function lvOpen(motionP) {
     const el = document.createElement("div");
-    el.className = "lv"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Camera light meter");
-    el.innerHTML = '<video playsinline muted autoplay></video><div class="lv-top">Point at ground like your site, not the sky.</div>'
+    el.className = "lv"; el.dataset.tilt = "wait";
+    el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Camera light meter");
+    el.innerHTML = '<video playsinline muted autoplay></video><div class="lv-aim" aria-hidden="true"></div>'
+      + '<div class="lv-top"><div class="lv-tilt" aria-live="polite"><span class="lv-ang">–°</span><span class="lv-tmsg">Point the camera straight down at the ground</span></div>'
+      + '<div class="lv-gauge" aria-hidden="true"><i></i><b style="left:50%"></b><b style="left:calc(100% - 2px)"></b></div>'
+      + '<div class="lv-scale" aria-hidden="true"><span>0° horizon</span><span>45° min</span><span>90° down</span></div></div>'
       + '<div class="lv-panel"><div class="lv-ev" aria-live="polite">Starting camera…</div><div class="lv-det"></div>'
       + '<div class="lv-btns"><button type="button" class="lv-cancel">Cancel</button><button type="button" class="lv-use" disabled>Measure light</button></div>'
       + '<div class="lv-note">Reads the camera\'s exposure settings. No photo is saved or uploaded.</div></div>';
     document.body.appendChild(el); document.body.style.overflow = "hidden";
-    const me = lv = { el, timer: 0, stream: null, last: null, track: null };
-    const q = c => el.querySelector(c);
+    const me = lv = { el, timer: 0, stream: null, last: null, track: null, ang: null, gotOri: false, noSensor: "",
+      busy: false, auto: true, holdSince: 0, opener: document.activeElement };
+    const q = c => el.querySelector(c), btn = q(".lv-use");
     const say = (big, small) => { q(".lv-ev").textContent = big; q(".lv-det").textContent = small; };
-    q(".lv-cancel").onclick = lvClose;
-    el.addEventListener("keydown", e => { if (e.key === "Escape") lvClose(); });
-    q(".lv-use").onclick = async () => {
-      if (lv !== me || !me.track) return;
-      const btn = q(".lv-use"); btn.disabled = true; btn.textContent = "Measuring…";
+    // Tilt state drives the gauge, the Measure button and the hands-free reading
+    function renderTilt() {
+      if (lv !== me) return;
+      const a = me.ang, known = me.gotOri && isFinite(a);
+      const state = me.noSensor ? "none" : !known ? "wait" : a >= TILT_AUTO ? "good" : a >= TILT_MIN ? "ok" : "bad";
+      el.dataset.tilt = state;
+      if (known) {
+        q(".lv-ang").textContent = `${Math.max(0, Math.round(a))}°`;
+        q(".lv-gauge i").style.width = `${Math.max(0, Math.min(100, a / 90 * 100))}%`;
+      }
+      q(".lv-tmsg").textContent = me.noSensor ? me.noSensor
+        : !known ? "Point the camera straight down at the ground"
+        : state === "bad" ? "Tilt down: sky or horizon may be in view (45° minimum)"
+        : state === "ok" ? "OK. Straight down (90°) is best"
+        : me.busy ? "Measuring…" : me.auto ? "Straight down. Hold steady…" : "Straight down";
+      btn.disabled = !me.track || me.busy || (state === "bad" || state === "wait");
+      if (state === "good" && me.track && !me.busy && me.auto) {
+        if (!me.holdSince) me.holdSince = Date.now();
+        else if (Date.now() - me.holdSince >= HOLD_MS) measure();
+      } else me.holdSince = 0;
+    }
+    me.onOri = e => {
+      const a = downAngle(e);
+      if (!isFinite(a) || lv !== me) return;
+      me.ang = me.ang == null ? a : me.ang * 0.7 + a * 0.3;   // smooth hand shake
+      me.gotOri = true; me.noSensor = "";
+      clearTimeout(me.noOriTimer);
+      renderTilt();
+    };
+    const noSensor = why => { if (lv !== me || me.gotOri || me.noSensor) return; clearTimeout(me.noOriTimer); me.noSensor = why; renderTilt(); };
+    window.addEventListener("deviceorientation", me.onOri);
+    me.noOriTimer = setTimeout(() => noSensor("Tilt sensor unavailable: aim straight down at the ground, no sky in view."), 2500);
+    if (motionP) motionP.then(r => { if (r !== "granted") noSensor("Motion access was declined, so tilt can't be checked. Aim straight down at the ground."); },
+      () => noSensor("Motion access isn't available, so tilt can't be checked. Aim straight down at the ground."));
+    async function measure() {
+      if (lv !== me || me.busy || !me.track) return;
+      me.busy = true; me.holdSince = 0; btn.textContent = "Measuring…"; renderTilt();
+      const angAt = me.gotOri && isFinite(me.ang) ? Math.round(me.ang) : null;
       const r = await lvShot(me.track);
       if (lv !== me) return;
-      if (isFinite(r.ev)) { lvClose(); applyEv(r.ev, r.how); return; }
-      if (me.last) { const l = me.last; lvClose(); applyEv(l.ev, `iPhone camera live reading f/${fmt(l.N, 1)}, ${shutS(l.t)}, ISO ${Math.round(l.iso)}`); return; }
-      btn.disabled = false; btn.textContent = "Try again";
+      const at = angAt != null ? `, aimed ${angAt}° down` : "";
+      if (isFinite(r.ev)) { lvClose(); applyEv(r.ev, r.how + at); return; }
+      if (me.last) { const l = me.last; lvClose(); applyEv(l.ev, `${camName} live reading f/${fmt(l.N, 1)}, ${shutS(l.t)}, ISO ${Math.round(l.iso)}${at}`); return; }
+      me.busy = false; me.auto = false;                    // after a miss, wait for a tap instead of retrying on its own
+      btn.textContent = "Try again"; renderTilt();
       const keys = lvRead(me.track).keys.join(", ") || "nothing";
       say("No exposure data",
-        r.fail === "no-ic" ? `This browser can't take an in-camera shot (needs iOS 18.4 or later${iosVer ? "; this is iOS " + iosVer : ""}). Set the light with the slider instead.`
+        r.fail === "no-ic" ? `This browser can't take an in-camera shot${IOS ? ` (needs iOS 18.4 or later${iosVer ? "; this is iOS " + iosVer : ""})` : ""}. Set the light with the slider instead.`
         : r.fail === "shot" ? `The camera couldn't take the shot (${r.err}). Hold steady and try again.`
         : `The shot came back without exposure settings (${r.tags} other metadata field${r.tags === 1 ? "" : "s"}). Camera reported: ${keys}.`);
-    };
+      if (!IOS && r.fail !== "shot" && !q(".lv-photo")) {   // other phones: fall back to a normal camera photo
+        const b = document.createElement("button"); b.type = "button"; b.className = "lv-photo"; b.textContent = "Use a camera photo instead";
+        b.onclick = () => { lvClose(); $("lm-file").click(); };
+        q(".lv-btns").appendChild(b);
+      }
+    }
+    q(".lv-cancel").onclick = lvClose;
+    el.addEventListener("keydown", e => { if (e.key === "Escape") lvClose(); });
+    btn.onclick = () => { me.auto = false; measure(); };
     q(".lv-cancel").focus();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
@@ -1810,37 +1924,56 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       me.stream = stream;
       const v = q("video"); v.srcObject = stream; v.play().catch(() => {});
       me.track = stream.getVideoTracks()[0];
-      say("Ready", "Hold the phone steady, then tap Measure light.");
-      q(".lv-use").disabled = false;
-      me.timer = setInterval(() => {                      // bonus: live readout if the browser shares it
+      say("Ready", "Aim straight down. It measures by itself when held level, or tap Measure light.");
+      renderTilt();
+      me.timer = setInterval(() => {                      // keeps the hold timer ticking; live readout if the browser shares it
         if (lv !== me) return;
+        renderTilt();
         const r = lvRead(me.track);
-        if (r.t > 0 && r.iso > 0) {
+        if (r.t > 0 && r.iso > 0 && !me.busy) {
           me.last = { ...r, ev: Math.log2(r.N * r.N / r.t) - Math.log2(r.iso / 100) };
           say("EV " + fmt(me.last.ev, 1), `f/${fmt(r.N, 1)} · ${shutS(r.t)} · ISO ${Math.round(r.iso)}`);
         }
-      }, 300);
+      }, 200);
     } catch (e) {
       if (lv !== me) return;
       say("Camera unavailable", e && e.name === "NotAllowedError"
-        ? "Camera access was blocked. In Safari tap aA › Website Settings › Camera › Allow, then try again."
+        ? IOS ? "Camera access was blocked. In Safari tap aA › Website Settings › Camera › Allow, then try again."
+              : "Camera access was blocked. Allow the camera for this site in your browser settings, then try again."
         : "The camera couldn't be opened here (" + ((e && e.name) || "error") + ").");
     }
   }
-  $("lm-sc").addEventListener("click", () => {
+  // One entry point for the Light card button and the floating quick button
+  function startMeter() {
     if (NATIVE) { window.webkit.messageHandlers.lightmeter.postMessage("open"); return; }
-    if (!IOS) return;
-    if (!HOSTED) { const msg = $("lm-msg"); msg.className = "hint warn"; msg.textContent = LM_HELP; return; }
-    lvOpen();
-  });
+    if (IOS && !HOSTED) { const msg = $("lm-msg"); msg.className = "hint warn"; msg.textContent = LM_HELP; return; }
+    if (!LIVE) { $("lm-file").click(); return; }
+    // iOS asks for motion access only from inside a tap, so request it before anything is awaited
+    let motionP = null;
+    try {
+      if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === "function") motionP = DeviceOrientationEvent.requestPermission();
+    } catch (e) { motionP = Promise.resolve("denied"); }
+    lvOpen(motionP);
+  }
+  $("lm-sc").addEventListener("click", startMeter);
+  $("lm-quick").addEventListener("click", startMeter);
+  $("lm-quick").hidden = !(NATIVE || !IOS || HOSTED);       // phones only (CSS); not on iPhone inside Claude
   // Moving the slider by hand returns to the preset light levels
   $("light").addEventListener("input", e => {
     if (!e.isTrusted || measuredEv === null) return;
-    measuredEv = null;
+    measuredEv = null; lightAt = null;
+    try { localStorage.removeItem(LIGHT_KEY); } catch (err) {}
     $("lm-msg").className = "hint";
     $("lm-msg").textContent = LM_HELP;
-    calc();
+    lightUI(); calc();
   });
+  // A recent reading carries over a reload; the page then re-recommends for that light
+  try {
+    const st = JSON.parse(localStorage.getItem(LIGHT_KEY) || "null");
+    if (st && isFinite(st.ev) && st.at && Date.now() - st.at < LIGHT_KEEP_H * 3600000) { applyEv(st.ev, st.how || "Camera reading", st.at); recommend(); }
+  } catch (e) {}
+  lightUI();
+  setInterval(lightUI, 30000);
 
   // ---- Settings popover (units live here; metric is the default for Australian operators)
   const setPop = open => { $("set-pop").hidden = !open; $("set-open").setAttribute("aria-expanded", open); };
@@ -1982,7 +2115,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
 
   // ---- Floating sharpness badge: appears once less than 65% of the sharpness donut is on screen
   if ("IntersectionObserver" in window) {
-    new IntersectionObserver(([e]) => { $("fs").hidden = e.intersectionRatio >= 0.65; },
+    new IntersectionObserver(([e]) => { $("fs").hidden = e.intersectionRatio >= 0.65; document.body.classList.toggle("fs-on", !$("fs").hidden); },
       { threshold: [0, 0.65, 1] }).observe(document.querySelector("svg.donut"));
   }
   $("fs").onclick = () => { if ($("sharp").classList.contains("collapsed") && matchMedia("(max-width: 700px)").matches) $("sharp").querySelector("h2").click();
