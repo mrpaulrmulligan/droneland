@@ -737,16 +737,18 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   const state = { units: "metric", mission: "site" };
   // Droneland mission types: each sets the drone, lens, ISO ceiling and altitude rule, in that order of decision
   const MISSIONS = {
-    site:  { name: "Site establishment", lower: "site establishment", drones: ["p1"], lenses: [35, 50], lens: 35, isoCap: 1600, altMin: 50, alt: 60,
+    site:  { name: "Site establishment", lower: "site establishment", drones: ["p1"], lenses: { p1: [35, 50] }, lens: 35, isoCap: 1600, altMin: 50, alt: 60,
              why: "clears trees and power lines",
              rules: "<b>Zenmuse P1</b> with the <b>35 or 50 mm</b> lens · <b>50 m AGL or higher</b> to clear trees and power lines · ISO up to <b>1,600</b>." },
     ndvi:  { name: "NDVI scan", lower: "NDVI scan", drones: ["m3m"], isoCap: 2000, altMin: 20, alt: 30, why: "normal NDVI height", cricket: true,
              rules: "<b>Mavic 3 Multispectral</b>, RGB and multispectral together · <b>20 m AGL or higher</b> (lower for turf cricket pitches) · ISO up to <b>2,000</b>." },
-    weed:  { name: "Weed mapping", lower: "weed mapping", preset: "p1", lens: 50, isoCap: 800, alt: 20, relief: 2, finest: true,
-             rules: "Detail comes first: fly as low as blur and the camera allow for the <b>finest GSD</b> · ISO up to <b>800</b> · any drone." },
+    weed:  { name: "Weed mapping", lower: "weed mapping", drones: ["p1", "phaseone"], lenses: { p1: [50], phaseone: [150] }, preset: "p1", lens: 50, isoCap: 800, alt: 20, altFor: { p1: 20, phaseone: 60 }, relief: 2, finest: true,
+             rules: "<b>Zenmuse P1</b> with the <b>50 mm</b> lens, or the <b>Phase One iXM-GS120</b> with the <b>150 mm</b> lens · fly as low as blur and the camera allow for the <b>finest GSD</b> · ISO up to <b>800</b>." },
     other: { name: "Other", rules: "No mission rules: any drone, your own altitude and ISO limits." },
   };
   const M = () => MISSIONS[state.mission] || MISSIONS.other;
+  // Which mission rule a camera falls under: built-in presets by id; the saved Phase One profile by name
+  const kindOf = p => p.saved && /phase\s*one/i.test(p.name) ? "phaseone" : p.id;
   const altFloor = () => M().altMin && !(M().cricket && $("cricket").checked) ? M().altMin : 0;
   const defaults = { preset: "m3e", alt: 80, spd: 4, fo: 80, so: 70, bl: 0.5, area: 40, ss: 2000, ap: 5.6, relief: 5, orient: "across", mp: 20, feq: 24, smax: 2000, iso: 100, isomax: 6400, isocap: 640, isomin: 100, light: "clear" };
   let apList = [], ssList = [], isoList = [], last = null;
@@ -758,11 +760,13 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const cur = sel.value;
     sel.innerHTML = "";
     const only = M().drones;
-    PRESETS.filter(p => p.id !== "custom" && (!only || only.includes(p.id))).forEach(p => sel.add(new Option(p.name, p.id)));
-    if (only) {                                       // mission fixes the drone: no saved or custom cameras
-      sel.value = only.includes(cur) ? cur : only[0];
+    if (only) {                                       // mission fixes the drone (saved profiles only if named, no custom)
+      [...PRESETS, ...saved].filter(p => p.id !== "custom" && only.includes(kindOf(p))).forEach(p => sel.add(new Option(p.name, p.id)));
+      const ids = [...sel.options].map(o => o.value);
+      sel.value = ids.includes(cur) ? cur : ids[0];
       return sel.value !== cur;
     }
+    PRESETS.filter(p => p.id !== "custom").forEach(p => sel.add(new Option(p.name, p.id)));
     if (saved.length) {
       const g = document.createElement("optgroup"); g.label = "Saved profiles";
       saved.forEach(p => g.appendChild(new Option(p.name, p.id)));
@@ -891,7 +895,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       // Keep the chosen lens when the same camera is refreshed (e.g. a lens was just added)
       const lens = $("lens"), prev = state.lensFor === p.id ? (state.selectLens ?? lens.value) : null;
       lens.innerHTML = "";
-      const ls = p.lenses.filter(l => !(M().lenses && p.id === "p1") || M().lenses.includes(l.mm));
+      const keep = M().lenses && M().lenses[kindOf(p)], fit = keep ? p.lenses.filter(l => keep.includes(l.mm)) : [];
+      const ls = fit.length ? fit : p.lenses;
       ls.forEach(l => lens.add(new Option(l.name, l.mm)));
       lens.value = prev != null && ls.some(l => String(l.mm) === String(prev)) ? prev : ls.some(l => l.mm === p.fl) ? p.fl : ls[0].mm;
       state.lensFor = p.id; state.selectLens = null;
@@ -1087,18 +1092,29 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         <p>${cause}</p>
         <p>Any one of these fixes it:</p><ul>${fixes.map(x => `<li>${x}</li>`).join("")}</ul>`;
     }
-    // Weed mapping: lowest height where blur and the capture interval both still work at this speed
-    const altInt = v * miE / ((alongS / alt) * (1 - fo));
-    const finestAlt = Math.max(minAltBlur, altInt);
+    // Weed mapping: lowest height (0.5 m steps) where, at this speed, shutter and aperture, the things that change
+    // with height all still work: motion blur within the limit, the camera keeps up with the overlap, and depth of
+    // field (2 px circle of confusion, focused on the ground) covers the height variation
+    let finestAlt = Infinity;
+    if (M().finest) {
+      const Hf = f * f / (N * 2 * pitch) + f;
+      for (let a = 1; a <= 150; a += 0.5) {
+        const sMm = a * 1000, nearM = sMm * (Hf - f) / (Hf + sMm - 2 * f) / 1000;
+        if (v * t / (a * pitch / f) > bl || (alongS / alt) * a * (1 - fo) / v < miE || a - nearM < relief) continue;
+        finestAlt = a; break;
+      }
+    }
     if (altFloor() && alt < altFloor() - 0.01) {
       $("althint").textContent = `${M().name}: fly ${len(altFloor(), 0)} or higher (${M().why})`;
       $("althint").className = "fhint bad";
     } else if (M().finest) {
-      const [fg, fgU] = gsdS(Math.ceil(finestAlt) * pitch / f);
-      $("althint").textContent = alt < finestAlt
-        ? `Too low for this speed: ${len(Math.ceil(finestAlt), 0)} (${fg} ${fgU}) is the lowest that works. Slow down to fly lower.`
-        : `Finest detail at this speed: ${len(Math.ceil(finestAlt), 0)} for ${fg} ${fgU}`;
-      $("althint").className = "fhint" + (alt < finestAlt ? " bad" : "");
+      const [fg, fgU] = gsdS(finestAlt * pitch / f);
+      $("althint").textContent = !isFinite(finestAlt)
+        ? "No height up to 150 m works at these settings. Slow down or stop down."
+        : alt < finestAlt - 0.01
+        ? `Too low for these settings: ${len(finestAlt, 1)} (${fg} ${fgU}) is the lowest with no blur, enough focus depth and a camera that keeps up. Slow down or stop down to fly lower.`
+        : `Finest detail at these settings: ${len(finestAlt, 1)} for ${fg} ${fgU}`;
+      $("althint").className = "fhint" + (alt < finestAlt - 0.01 ? " bad" : "");
     } else {
       $("althint").textContent = `Blur-safe at ${len(minAltBlur, 0)} or higher`;
       $("althint").className = "fhint" + (alt < minAltBlur ? " bad" : "");
@@ -1344,10 +1360,10 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     if (!adv.length) adv.push(`Fix the motion blur shown at the top before flying.`);
     if (adv.length === 1 && adv[0].startsWith("Settings are inside")) adv[0] = adv[0].replace("all limits", "all limits and exposure is correct");
     if (altFloor() && alt < altFloor() - 0.01) adv.unshift(`${M().name} flights should be ${len(altFloor(), 0)} AGL or higher (${M().why}).${M().cricket ? " For a low scan of a turf cricket pitch, tick Turf cricket pitch." : ""}`);
-    if (M().finest && alt >= finestAlt) {
-      const [fg, fgU] = gsdS(Math.ceil(finestAlt) * pitch / f);
+    if (M().finest && isFinite(finestAlt) && alt >= finestAlt - 0.01) {
+      const [fg, fgU] = gsdS(finestAlt * pitch / f);
       adv.push(alt > finestAlt * 1.15
-        ? `For finer weed detail you can fly as low as <b>${len(Math.ceil(finestAlt), 0)}</b> (${fg} ${fgU}) at ${spdS(v)} and ${shutterS(t)}. Check for obstacles first.`
+        ? `For finer weed detail you can fly as low as <b>${len(finestAlt, 1)}</b> (${fg} ${fgU}) at ${spdS(v)}, ${shutterS(t)} and f/${N} with blur, focus depth and capture interval all OK. Check for obstacles first.`
         : `You're at about the finest detail ${spdS(v)} and ${shutterS(t)} allow. Fly slower or use a faster shutter to go lower.`);
     }
     if (ms && msGain > 1.05) adv.push(`Low light for the multispectral cameras: they need about ${fmt(msGain, 1)}× gain at 1/30 s, which adds noise to NDVI. Fly in brighter light if you can.`);
@@ -1531,7 +1547,11 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   $("orient").value = defaults.orient;
   sel.value = defaults.preset; applyPreset();
 
-  sel.addEventListener("change", () => { applyPreset(); calc(); });
+  sel.addEventListener("change", () => {
+    applyPreset();
+    const a0 = M().altFor && preset() && M().altFor[kindOf(preset())];   // weed mapping: each camera's starting height
+    if (a0) { $("alt").value = imp() ? Math.round(a0 / FT) : a0; calc(); recommend(); } else calc();
+  });
   $("lens").addEventListener("change", () => { applyLens(); calc(); });
   $("ap-r").addEventListener("input", fillShutters);
   fmtSel.addEventListener("change", () => {
@@ -1568,7 +1588,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     if (apply) {
       if (m.preset) sel.value = m.preset;
       if (m.lens && sel.value === "p1") { state.lensFor = "p1"; state.selectLens = m.lens; }
-      if (m.alt) $("alt").value = imp() ? Math.round(m.alt / FT) : m.alt;
+      const a0 = (m.altFor && preset() && m.altFor[kindOf(preset())]) || m.alt;
+      if (a0) $("alt").value = imp() ? Math.round(a0 / FT) : a0;
       $("relief").value = imp() ? Math.round((m.relief || defaults.relief) / FT) : (m.relief || defaults.relief);   // grass is flat
     }
     $("isocap").value = m.isoCap || defaults.isocap;
