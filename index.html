@@ -14,7 +14,7 @@
   --muted: #5b6875;
   --line: #d3dae0;
   --accent: #d9730d;          /* aviation amber */
-  --accent-soft: #fbead8;
+  --accent-soft: #fbead8; --on-accent: #17212b;
   --field: #f6f8f9;
   --good: #1f8a4c;  --good-bg: #e2f3e9;
   --warn: #b26a00;  --warn-bg: #fdf0d9;
@@ -58,7 +58,7 @@ h1 span { color: var(--accent); }
 .setpop .units { display: flex; } .setpop .units button { flex: 1; min-height: 38px; }
 .units { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel); }
 .units button { font: 600 13px var(--f-display); letter-spacing: .06em; text-transform: uppercase; padding: 7px 14px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-.units button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.units button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 
 .tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 18px; }
 .tabs button { font: 600 15px var(--f-display); letter-spacing: .04em; padding: 8px 18px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; }
@@ -150,7 +150,7 @@ svg.donut text { font: 500 22px var(--f-mono); fill: var(--ink); }
 .info { position: relative; flex: none; width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 1px solid var(--muted); background: transparent; color: var(--muted); font: 600 11px/1 var(--f-mono); display: inline-grid; place-items: center; cursor: pointer; }
 .info::after { content: ""; position: absolute; inset: -9px; }   /* bigger touch target */
 .info:hover { border-color: var(--accent); color: var(--accent); }
-.info[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.info[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .tip { grid-column: 1 / -1; font-size: 13px; line-height: 1.5; color: var(--ink); background: var(--accent-soft); border-radius: 6px; padding: 10px 12px; }
 .tip b { font-weight: 600; }
 .isoq { font: 600 12px var(--f-body); margin-left: 6px; padding: 2px 7px; border-radius: 999px; }
@@ -159,7 +159,7 @@ svg.donut text { font: 500 22px var(--f-mono); fill: var(--ink); }
 .isoq.bad  { color: var(--bad);  background: var(--bad-bg); }
 .hdr-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .gsdbtn { font: 600 13px var(--f-display); letter-spacing: .06em; text-transform: uppercase; padding: 7px 14px; border-radius: 6px; border: 1.5px solid var(--accent); background: var(--accent-soft); color: var(--ink); cursor: pointer; }
-.gsdbtn:hover { background: var(--accent); color: #fff; }
+.gsdbtn:hover { background: var(--accent); color: var(--on-accent); }
 .scrim { position: fixed; inset: 0; background: rgba(10, 16, 22, .45); z-index: 40; }
 .drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 41; width: min(380px, 100vw); overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line); box-shadow: -12px 0 32px rgba(0, 0, 0, .25);
   display: flex; flex-direction: column; gap: 14px;
@@ -239,12 +239,28 @@ svg.donut text { font: 500 22px var(--f-mono); fill: var(--ink); }
 input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); height: 24px; cursor: pointer; }
 .slider .scale { margin-top: -2px; }
 .recbtn { width: 100%; font: 600 15px var(--f-display); letter-spacing: .04em; padding: 10px; border-radius: 6px; border: 1.5px solid var(--accent); background: var(--accent-soft); color: var(--ink); cursor: pointer; }
-.recbtn:hover:not(:disabled) { background: var(--accent); color: #fff; }
+.recbtn:hover:not(:disabled) { background: var(--accent); color: var(--on-accent); }
 .recbtn:disabled { border-color: var(--line); background: transparent; color: var(--muted); cursor: default; }
 .recwrap { margin-top: 14px; }
+/* Light card: what the maths is using right now, then the one-tap meter, then the preset fallback */
+.lread { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 8px; background: var(--field); border: 1.5px solid var(--line); border-left-width: 5px; }
+.lread.measured { border-color: var(--good); }
+.lread.stale { border-color: var(--warn); }
+.lr-ev { font: 500 30px var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1; }
+.lr-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.lr-name { font: 600 16px var(--f-body); }
+.lr-age { font-size: 13px; color: var(--muted); }
+.lread.measured .lr-age { color: var(--good); font-weight: 600; }
+.lread.stale .lr-age { color: var(--warn); font-weight: 600; }
+.ph-only { display: none; }
 .lmeter { display: none; }
-.lmbtn { flex-direction: row; align-items: center; justify-content: center; gap: 8px; min-height: 42px; margin-top: 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: 600 14px var(--f-body); cursor: pointer; }
-.lmbtn:hover { border-color: var(--accent); }
+.lmbtn { flex-direction: row; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 54px; margin-top: 12px; border-radius: 10px; border: 0;
+  background: var(--accent); color: var(--on-accent); font: 700 18px var(--f-display); letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
+.lmbtn:hover { filter: brightness(1.06); }
+.lmbtn:active { transform: translateY(1px); }
+.lread.stale ~ .lmeter .lmbtn { box-shadow: 0 0 0 3px var(--warn-bg), 0 0 0 4.5px var(--warn); }
+.lpreset { margin-top: 14px; }
+#lm-msg:empty { display: none; }
 .lv { position: fixed; inset: 0; z-index: 60; background: #000; display: flex; flex-direction: column; }
 .lv video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .lv-top { position: relative; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; background: rgba(0, 0, 0, .55); color: #fff; font: 500 15px var(--f-body); text-align: center; }
@@ -259,8 +275,6 @@ input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); heigh
 .lmios { display: none; text-decoration: none; }
 .ios .lmbtn, .live .lmbtn { display: none; }
 .ios .lmbtn.lmios, .live .lmbtn.lmios { display: flex; }
-.lm-age { margin: 8px 0 0; font-weight: 500; }
-.lm-age.stale { color: var(--warn); }
 /* Tilt gauge in the camera meter: 0° = horizon, 90° = straight down */
 .lv-tilt { display: flex; align-items: baseline; justify-content: center; gap: 10px; }
 .lv-ang { font: 500 30px var(--f-mono); font-variant-numeric: tabular-nums; }
@@ -275,8 +289,7 @@ input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); heigh
 .lv[data-tilt="none"] .lv-gauge, .lv[data-tilt="none"] .lv-scale, .lv[data-tilt="none"] .lv-ang { display: none; }
 .lv-aim { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border: 2px solid rgba(255, 255, 255, .7); border-radius: 50%; pointer-events: none; }
 .lv[data-tilt="good"] .lv-aim { border-color: #5fd27a; }
-/* One-tap re-measure on phones; sits above the floating readout bar when that is showing */
-.lmquick { display: none; }
+
 #lm-msg.ok { color: var(--good); } #lm-msg.warn { color: var(--warn); }
 #recnote:empty { display: none; }
 #rectext:empty { display: none; }
@@ -345,6 +358,17 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   .copybtn { min-height: 34px; padding-inline: 12px; }
   .colbtn { width: 36px; height: 36px; margin: -8px -8px -8px 0; }
   .lmeter { display: block; }                                          /* camera light meter */
+  .ph-only { display: inline; }
+  .sub { display: none; }                                             /* the title says enough on a phone */
+  h1 { font-size: 22px; line-height: 1.15; }
+  .wrap { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+  header { margin-bottom: 12px; align-items: center; }
+  .tabs { margin-bottom: 12px; }
+  .panel { padding: 14px 14px 16px; }
+  h2 { font-size: 17px; margin-bottom: 12px; }
+  .panel.collapsed > h2 { min-height: 28px; }
+  .camsum { padding: 8px 10px; } .camsum b { font-size: 17px; } .camsum span { font-size: 12px; line-height: 1.35; }
+  .info { width: 20px; height: 20px; } .info::after { inset: -12px; }   /* 44 px touch target */
   /* desktop/tablet only: GSD side tool, assumptions note, footprint diagram, recommendations list, fixed camera specs */
   #gsd-open, footer, .nomobile, .cam-locked .spec, .cam-locked #camhint { display: none !important; }
   .floatsharp { left: calc(10px + env(safe-area-inset-left, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px));
@@ -354,14 +378,6 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   .fs-x b small { font-size: 11px; color: var(--muted); margin-left: 2px; }
   .fs-x b.warn { color: var(--warn); } .fs-x b.bad { color: var(--bad); }
   .floatsharp > svg { order: 3; } .fs-txt { order: 4; }
-  .lmquick:not([hidden]) { display: flex; position: fixed; z-index: 31; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    align-items: center; gap: 8px; min-height: 46px; padding: 6px 14px 6px 12px; border-radius: 999px; border: 1px solid var(--line);
-    background: var(--panel); color: var(--ink); box-shadow: 0 6px 20px rgba(0, 0, 0, .22); font: inherit; cursor: pointer; }
-  .fs-on .lmquick { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
-  .lmquick.stale { border-color: var(--warn); }
-  .lmq-t { display: flex; flex-direction: column; line-height: 1.1; text-align: left; }
-  .lmq-t b { font: 500 15px var(--f-mono); } .lmq-t small { font-size: 11px; color: var(--muted); }
-  .lmquick.stale small { color: var(--warn); }
   .fs-v b { font-size: 17px; } .fs-l { font-size: 11px; padding: 1px 5px; }
 }
 @media (pointer: coarse) { input[type="range"] { height: 36px; } }
@@ -398,6 +414,25 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   <div class="grid">
     <!-- INPUTS -->
     <div class="col">
+      <section class="panel" id="light-p">
+        <h2>Light conditions</h2>
+        <div class="lread" id="lread" aria-live="polite">
+          <b class="lr-ev" id="lr-ev"></b>
+          <div class="lr-txt"><span class="lr-name" id="lr-name"></span><span class="lr-age" id="lm-age"></span></div>
+        </div>
+        <div class="lmeter">
+          <label class="lmbtn" for="lm-file"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lm-t">Measure light</span></label>
+          <button type="button" class="lmbtn lmios" id="lm-sc"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lm-t">Measure light</span></button>
+          <input type="file" id="lm-file" accept="image/*" capture="environment" hidden>
+          <p class="hint" id="lm-msg"></p>
+        </div>
+        <div class="slider lpreset">
+          <label class="sl-head" for="light"><span class="lt">Preset<button type="button" class="info" data-info="light" aria-expanded="false" aria-label="About light conditions">i</button></span> <b id="light-v"></b></label>
+          <input type="range" id="light" min="0" step="1">
+          <div class="scale" id="light-scale"></div>
+        </div>
+      </section>
+
       <section class="panel" id="mission-p">
         <h2>Mission</h2>
         <div class="mis-pick" role="group" aria-label="Mission type">
@@ -488,27 +523,6 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
             </div>
           </div>
           <p class="hint" id="prof-msg" aria-live="polite"></p>
-        </div>
-        <h3 class="subh">Light conditions</h3>
-        <div class="fields">
-          <div class="full slider">
-            <label class="sl-head" for="light"><span class="lt">Ambient light<button type="button" class="info" data-info="light" aria-expanded="false" aria-label="About light conditions">i</button></span> <b id="light-v"></b></label>
-            <input type="range" id="light" min="0" step="1">
-            <div class="scale" id="light-scale"></div>
-            <div class="lmeter">
-              <label class="lmbtn" for="lm-file">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                <span class="lm-t">Measure light with camera</span>
-              </label>
-              <button type="button" class="lmbtn lmios" id="lm-sc">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                <span class="lm-t">Measure light with camera</span>
-              </button>
-              <input type="file" id="lm-file" accept="image/*" capture="environment" hidden>
-              <p class="hint lm-age" id="lm-age" hidden></p>
-              <p class="hint" id="lm-msg"></p>
-            </div>
-          </div>
         </div>
         <h3 class="subh">Flight</h3>
         <div class="fields">
@@ -663,10 +677,6 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     <circle id="fs-ring" cx="50" cy="50" r="40" fill="none" stroke-width="14" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="0 252"/>
   </svg>
   <span class="fs-x"><span class="fs-k">GSD</span><b id="fs-gsd"></b></span><span class="fs-x"><span class="fs-k">Blur</span><b id="fs-blur"></b></span><span class="fs-txt"><span class="fs-k">Sharpness</span><span class="fs-v"><b id="fs-v"></b> <span id="fs-l" class="fs-l"></span></span></span>
-</button>
-
-<button type="button" class="lmquick" id="lm-quick" hidden aria-label="Measure light with the camera">
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lmq-t"><b id="lmq-ev">Light</b><small id="lmq-age">Measure</small></span>
 </button>
 
 <div class="scrim" id="gsd-scrim" hidden></div>
@@ -1052,7 +1062,10 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     $("apv").textContent = `f/${N}`;
     $("ssv").textContent = `1/${ss.toLocaleString()} s`;
     labelFlight();
-    $("light-v").innerHTML = `${curLight().name}<small>EV ${measuredEv !== null ? fmt(measuredEv, 1) : curLight().ev}</small>`;
+    const lp = LIGHT_ORDER[+$("light").value] || LIGHT_ORDER[LIGHT_ORDER.length - 1];
+    $("light-v").innerHTML = `${lp.name}<small>EV ${lp.ev}</small>`;
+    $("lr-ev").textContent = `EV ${measuredEv !== null ? fmt(measuredEv, 1) : lp.ev}`;
+    $("lr-name").textContent = measuredEv !== null ? `Near ${lp.name.toLowerCase()}` : lp.name;
     const altIn = +$("alt").value, spdIn = +$("spd").value, areaIn = +$("area").value, reliefIn = +$("relief").value;
     const alt = imp() ? altIn * FT : altIn;
     const v = imp() ? spdIn * MPH : spdIn;
@@ -1542,7 +1555,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     isocap: "The highest ISO the <b>Recommend</b> button will choose. Keep it <b>below 800</b> to avoid visible grain; lower is cleaner.",
     mi: "The <b>minimum capture interval</b>: how quickly the camera can take one photo after another. At high front overlap it limits how fast you can fly.",
     orient: "Which side of the photo runs <b>across the flight line</b>. Long side across track gives wider strips and fewer flight lines.",
-    light: "On phones, <b>Measure light with camera</b> reads the real light: aim straight down at the ground (at least 45°, ideally 90°) and it measures by itself. Light changes through the day, so re-measure before each flight; the floating <b>EV</b> button does it in one tap. Otherwise pick the closest preset: roughly how bright the scene is, used to work out exposure. Darker conditions need a <b>wider aperture</b>, a <b>slower shutter</b> or a <b>higher ISO</b>. Clear midday sun (high sun, clear sky) is about EV 16 at ISO 100; ordinary bright sun about EV 15.",
+    light: "Light is the first thing to set because it changes through the day. On phones, <b>Measure light</b> reads the real light with the camera: aim straight down at the ground (at least 45°, ideally 90°) and it measures by itself. A reading turns amber after 30 minutes as a reminder to re-measure. Otherwise pick the closest preset. Darker conditions need a <b>wider aperture</b>, a <b>slower shutter</b> or a <b>higher ISO</b>. Clear midday sun is about EV 16 at ISO 100; ordinary bright sun about EV 15.",
   };
   function infoBtn(key, name) {
     return `<button type="button" class="info" data-info="${key}" aria-expanded="${state.tip === key}" aria-label="About ${name}">i</button>`;
@@ -1717,12 +1730,12 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   // Inside the Droneland iPhone app the button opens a native live light meter
   const NATIVE = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lightmeter);
   const LM_HELP = NATIVE
-    ? "Opens a live light meter. Point the camera at ground like your site (not the sky), tap to meter a spot, then Use reading. Nothing is photographed or saved."
+    ? "Point at ground like your site (not the sky), tap to meter, then Use reading. Nothing is saved."
     : HOSTED && (IOS || typeof ImageCapture === "function") && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
-    ? "Opens the camera with a tilt gauge. Aim straight down at the ground (at least 45°, ideally 90°) and it measures by itself. The camera's exposure settings are read, then the shot is discarded. Nothing is saved or uploaded."
+    ? "Aim straight down at the ground (45° or more, 90° best) and it measures by itself. Nothing is saved."
     : IOS
     ? "On iPhone the camera meter works in the hosted Droneland app" + (HOSTED_URL ? " (" + HOSTED_URL + ")" : "") + ", not inside Claude."
-    : "Opens your camera. Photograph ground like your site (not the sky). The app reads the camera's exposure settings, then discards the photo. It is not saved, kept or uploaded.";
+    : "Photograph ground like your site (not the sky). Only the exposure settings are read; the photo is discarded.";
   $("lm-msg").textContent = LM_HELP;
   const readFile = f => f.arrayBuffer ? f.arrayBuffer()
     : new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsArrayBuffer(f); });
@@ -1762,16 +1775,10 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const has = measuredEv !== null && lightAt, mins = has ? Math.floor((Date.now() - lightAt) / 60000) : 0;
     const stale = has && mins >= LIGHT_STALE_MIN;
     const ago = mins < 1 ? "just now" : mins < 60 ? `${mins} min ago` : `${Math.floor(mins / 60)} h ${mins % 60} min ago`;
-    const age = $("lm-age");
-    age.hidden = !has;
-    age.className = "hint lm-age" + (stale ? " stale" : "");
-    if (has) age.textContent = `Measured EV ${fmt(measuredEv, 1)} at ${clock(lightAt)} (${ago}).` + (stale ? " Light changes through the day: re-measure before the next flight." : "");
-    document.querySelectorAll(".lm-t").forEach(t => t.textContent = has ? "Re-measure light" : "Measure light with camera");
-    const qb = $("lm-quick");
-    qb.classList.toggle("stale", !!stale);
-    $("lmq-ev").textContent = has ? `EV ${fmt(measuredEv, 1)}` : "Light";
-    $("lmq-age").textContent = has ? (stale ? `${ago} · re-measure` : ago) : "Measure";
-    qb.setAttribute("aria-label", has ? `Light EV ${fmt(measuredEv, 1)}, measured ${ago}. Re-measure with the camera.` : "Measure light with the camera");
+    $("lread").className = "lread" + (has ? stale ? " stale" : " measured" : "");
+    $("lm-age").innerHTML = has ? `Measured ${clock(lightAt)} · ${ago}` + (stale ? " · re-measure" : "")
+      : `Preset estimate<span class="ph-only"> · measure for real light</span>`;
+    document.querySelectorAll(".lm-t").forEach(t => t.textContent = has ? "Re-measure light" : "Measure light");
   }
   function applyEv(ev, how, at) {
     const msg = $("lm-msg");
@@ -1783,7 +1790,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     $("rectext").textContent = "";
     calc();
     msg.className = ev < LIGHT_ORDER[0].ev - 0.5 ? "hint warn" : "hint ok";
-    msg.textContent = `${how}: ambient light about EV ${fmt(ev, 1)} (close to ${near.name.toLowerCase()}). Exposure checks now use this reading; move the slider to go back to the presets.`
+    msg.textContent = `${how}. Exposure now uses this reading; move the preset slider to go back.`
       + (ev < LIGHT_ORDER[0].ev - 0.5 ? " Very low light: expect high ISO or a slow shutter." : "");
     lightUI();
   }
@@ -1943,7 +1950,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         : "The camera couldn't be opened here (" + ((e && e.name) || "error") + ").");
     }
   }
-  // One entry point for the Light card button and the floating quick button
+  // One entry point for the Light card's camera button
   function startMeter() {
     if (NATIVE) { window.webkit.messageHandlers.lightmeter.postMessage("open"); return; }
     if (IOS && !HOSTED) { const msg = $("lm-msg"); msg.className = "hint warn"; msg.textContent = LM_HELP; return; }
@@ -1956,8 +1963,6 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     lvOpen(motionP);
   }
   $("lm-sc").addEventListener("click", startMeter);
-  $("lm-quick").addEventListener("click", startMeter);
-  $("lm-quick").hidden = !(NATIVE || !IOS || HOSTED);       // phones only (CSS); not on iPhone inside Claude
   // Moving the slider by hand returns to the preset light levels
   $("light").addEventListener("input", e => {
     if (!e.isTrusted || measuredEv === null) return;
@@ -1981,7 +1986,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   document.addEventListener("click", e => { if (!$("set-pop").hidden && !e.target.closest(".setwrap")) setPop(false); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("set-pop").hidden) { setPop(false); $("set-open").focus(); } });
 
-  // ---- Collapsible sections (phones only): every card starts collapsed except Mission and Drone and Camera
+  // ---- Collapsible sections (phones only): the inputs (Light, Mission, Drone and Camera) start open, results collapsed
   document.querySelectorAll("section.panel > h2").forEach(h => {
     const sec = h.parentElement;
     if (h.firstChild && h.firstChild.nodeType === 3 && h.firstChild.textContent.trim()) {
@@ -1993,7 +1998,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
     h.appendChild(b);
     const set = c => { sec.classList.toggle("collapsed", c); b.setAttribute("aria-expanded", !c); b.setAttribute("aria-label", `${c ? "Expand" : "Collapse"} ${name}`); };
-    set(name !== "Drone and Camera" && name !== "Mission");
+    set(!["Light conditions", "Mission", "Drone and Camera"].includes(name));
     h.addEventListener("click", e => {
       if (!matchMedia("(max-width: 700px)").matches) return;                         // phones only
       if (e.target.closest("button") && e.target.closest("button") !== b) return;   // e.g. Copy
@@ -2115,7 +2120,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
 
   // ---- Floating sharpness badge: appears once less than 65% of the sharpness donut is on screen
   if ("IntersectionObserver" in window) {
-    new IntersectionObserver(([e]) => { $("fs").hidden = e.intersectionRatio >= 0.65; document.body.classList.toggle("fs-on", !$("fs").hidden); },
+    new IntersectionObserver(([e]) => { $("fs").hidden = e.intersectionRatio >= 0.65; },
       { threshold: [0, 0.65, 1] }).observe(document.querySelector("svg.donut"));
   }
   $("fs").onclick = () => { if ($("sharp").classList.contains("collapsed") && matchMedia("(max-width: 700px)").matches) $("sharp").querySelector("h2").click();
