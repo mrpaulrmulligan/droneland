@@ -403,7 +403,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   .panel.collapsed h2 .est, .panel.collapsed h2 .copybtn { display: none; }
   .hsum.good { color: var(--good) !important; font-weight: 600 !important; } .hsum.warn { color: var(--warn) !important; font-weight: 600 !important; } .hsum.bad { color: var(--bad) !important; font-weight: 600 !important; }
   .fs-go { display: grid; place-items: center; flex: none; min-width: 64px; height: 40px; padding: 0 8px; border-radius: 8px; font: 700 15px var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
-  .fs-go.good { background: var(--good); color: var(--good-fg); } .fs-go.warn { background: var(--warn); color: var(--warn-fg); } .fs-go.bad { background: var(--bad); color: var(--bad-fg); }
+  .fs-go.good { background: var(--s5); color: var(--s5-fg); } .fs-go.warn { background: var(--s3); color: var(--s3-fg); } .fs-go.bad { background: var(--s1); color: var(--s1-fg); }
   .floatsharp > svg { display: none; }
   .fs-txt { order: 4; }
   .guard.good .cause { display: none; }
@@ -1371,9 +1371,9 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     if (interval < miE) warnings.push("trigger interval");
     if (capM && iso > capM) warnings.push("ISO");
     if (ms && msBlur > bl) warnings.push("multispectral blur");
-    if (st.min < 70) warnings.push("sharpness");
+    if (!["s5", "s4", "s3"].includes(st.key)) warnings.push("sharpness");     // same line as Flight check: "fair" is flyable
     $("pilotwarn").hidden = !warnings.length;
-    $("pilotwarn").textContent = warnings.length ? `Fix ${warnings.join(", ")} before entering these settings.` : "";
+    $("pilotwarn").textContent = warnings.length ? `Fix ${warnings.join(", ")} before entering these settings (Fix settings in Flight check).` : "";
     const terrain = relief > alt * 0.1;
     const lensObj = curLens();
     // Rows: [setting, value, note, show] — show: "both", "adv" (Advanced only) or "quick" (Quick only)
