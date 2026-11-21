@@ -1,4 +1,4 @@
-<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"></head><body>
+<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png" type="image/png"><meta name="theme-color" content="#17212b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Droneland"><meta name="apple-mobile-web-app-status-bar-style" content="default"></head><body>
 <title>Droneland - Field Calculator</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -347,6 +347,37 @@ svg text { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); }
 .advice li::marker { color: var(--accent); }
 footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch; }
 @media (prefers-reduced-motion: no-preference) { .bar i { transition: width .25s ease; } }
+
+/* ---- Field use: verdict first, summaries on collapsed cards, glove-size steppers */
+.vhead { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 8px; border: 1.5px solid; margin-bottom: 12px; }
+.vhead b { font: 700 30px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.vhead span { font: 600 15px/1.3 var(--f-body); color: var(--ink); }
+.vhead.good { border-color: var(--good); background: var(--good-bg); } .vhead.good b { color: var(--good); }
+.vhead.warn { border-color: var(--warn); background: var(--warn-bg); } .vhead.warn b { color: var(--warn); }
+.vhead.bad  { border-color: var(--bad);  background: var(--bad-bg); }  .vhead.bad b  { color: var(--bad); }
+.vfix { margin-top: 12px; min-height: 48px; font-size: 17px; }
+#vnote:empty { display: none; }
+.hsum { display: none; }
+.lchg { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); border: 1.5px solid var(--accent); font-size: 14px; line-height: 1.4; }
+.lchg b { font-weight: 700; }
+.lchg ul { margin: 4px 0 0; padding-left: 18px; }
+.lchg li { font: 500 15px var(--f-mono); }
+.lchg li s { color: var(--muted); text-decoration-thickness: 1.5px; }
+.lchg.same { background: var(--good-bg); border-color: var(--good); }
+.stepper { gap: 6px; align-items: center; }
+.step { flex: none; width: 32px; height: 32px; display: grid; place-items: center; padding: 0; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font: 600 20px/1 var(--f-mono); cursor: pointer; touch-action: manipulation; }
+.step:hover { border-color: var(--accent); }
+.step:active { background: var(--accent-soft); }
+.netchip { font: 600 12px var(--f-display); letter-spacing: .08em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); }
+.sethint { font-size: 12px; color: var(--muted); line-height: 1.35; max-width: 230px; }
+#awake-w, #off-w { display: flex; flex-direction: column; gap: 6px; }
+#awake-w[hidden], #off-w[hidden] { display: none; }
+.settog { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 600 14px var(--f-body); cursor: pointer; }
+.settog i { width: 36px; height: 20px; border-radius: 999px; background: var(--line); position: relative; flex: none; transition: background .15s; }
+.settog i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--panel); transition: transform .15s; }
+.settog[aria-pressed="true"] i { background: var(--good); }
+.settog[aria-pressed="true"] i::after { transform: translateX(16px); }
+.fs-go { display: none; }
 /* ---- Phones (kept last so these override the base rules above) */
 @media (max-width: 700px) {
   .wrap { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
@@ -359,6 +390,23 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   .colbtn { width: 36px; height: 36px; margin: -8px -8px -8px 0; }
   .lmeter { display: block; }                                          /* camera light meter */
   .ph-only { display: inline; }
+  /* Field order on phones: verdict, then what to enter in Pilot 2, then the headline numbers */
+  .out > #check { order: -3; } .out > #pilot { order: -2; } .out > #big { order: -1; }
+  .vhead b { font-size: 28px; }
+  .pilot { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .pilot > div:last-child { order: -1; }                               /* camera first: it changes with the light */
+  #pilot td { padding: 10px 0; }
+  #pilot td:nth-child(2) { font-size: 17px; font-weight: 500; }
+  .step { width: 42px; height: 42px; font-size: 22px; }
+  .stepper input { width: 5ch; }
+  .panel > h2 { flex-wrap: wrap; row-gap: 2px; }
+  .panel.collapsed .hsum { display: block; order: 9; flex-basis: 100%; padding-left: 14px; font: 500 14px var(--f-mono); letter-spacing: 0; text-transform: none; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .panel.collapsed h2 .est, .panel.collapsed h2 .copybtn { display: none; }
+  .hsum.good { color: var(--good) !important; font-weight: 600 !important; } .hsum.warn { color: var(--warn) !important; font-weight: 600 !important; } .hsum.bad { color: var(--bad) !important; font-weight: 600 !important; }
+  .fs-go { display: grid; place-items: center; flex: none; min-width: 64px; height: 40px; padding: 0 8px; border-radius: 8px; font: 700 15px var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
+  .fs-go.good { background: var(--good); color: var(--good-fg); } .fs-go.warn { background: var(--warn); color: var(--warn-fg); } .fs-go.bad { background: var(--bad); color: var(--bad-fg); }
+  .floatsharp > svg { display: none; }
+  .fs-txt { order: 4; }
   .guard.good .cause { display: none; }
   #mis-rules { display: none; }                                       /* mission rules summary: desktop only; lens and drone limits still apply */                               /* safe: the headline and limits are enough */
   .sub { display: none; }                                             /* the title says enough on a phone */
@@ -392,6 +440,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       <p class="sub">GSD, motion blur, image sharpness, trigger interval and coverage for nadir mapping flights.</p>
     </div>
     <div class="hdr-tools">
+      <span class="netchip" id="netchip" hidden>Offline</span>
       <button type="button" class="gsdbtn" id="gsd-open" aria-haspopup="dialog" aria-controls="gsd-drawer">GSD calculator</button>
       <div class="setwrap">
         <button type="button" class="setbtn" id="set-open" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="set-pop">
@@ -402,6 +451,22 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
           <div class="units" role="group" aria-label="Units">
             <button id="u-m" aria-pressed="true">Metric</button>
             <button id="u-i" aria-pressed="false">Imperial</button>
+          </div>
+          <span class="setk">Theme</span>
+          <div class="units" role="group" aria-label="Theme" id="theme-g">
+            <button data-theme-set="auto" aria-pressed="true">Auto</button>
+            <button data-theme-set="light" aria-pressed="false">Light</button>
+            <button data-theme-set="dark" aria-pressed="false">Dark</button>
+          </div>
+          <span class="sethint">Light is easiest to read in sun.</span>
+          <div id="awake-w" hidden>
+            <span class="setk">Screen</span>
+            <button type="button" class="settog" id="awake" aria-pressed="false"><span>Keep screen on</span><i aria-hidden="true"></i></button>
+            <span class="sethint" id="awake-h">Stops the phone locking between flights. Uses more battery.</span>
+          </div>
+          <div id="off-w" hidden>
+            <span class="setk">Offline</span>
+            <span class="sethint" id="off-h"></span>
           </div>
         </div>
       </div>
@@ -417,11 +482,12 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     <!-- INPUTS -->
     <div class="col">
       <section class="panel" id="light-p">
-        <h2>Light conditions</h2>
+        <h2><span>Light conditions</span><span class="hsum" id="sum-light"></span></h2>
         <div class="lread" id="lread" aria-live="polite">
           <b class="lr-ev" id="lr-ev"></b>
           <div class="lr-txt"><span class="lr-name" id="lr-name"></span><span class="lr-age" id="lm-age"></span></div>
         </div>
+        <div class="lchg" id="lm-chg" aria-live="polite" hidden></div>
         <div class="lmeter">
           <label class="lmbtn" for="lm-file"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lm-t">Measure light</span></label>
           <button type="button" class="lmbtn lmios" id="lm-sc"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="lm-t">Measure light</span></button>
@@ -436,7 +502,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       </section>
 
       <section class="panel" id="mission-p">
-        <h2>Mission</h2>
+        <h2><span>Mission</span><span class="hsum" id="sum-mission"></span></h2>
         <div class="mis-pick" role="group" aria-label="Mission type">
           <button type="button" data-mis="site" aria-pressed="false">Site establishment</button>
           <button type="button" data-mis="ndvi" aria-pressed="false">NDVI scan</button>
@@ -447,8 +513,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         <p class="hint" id="mis-rules" aria-live="polite"></p>
       </section>
 
-      <section class="panel">
-        <h2>Drone and Camera</h2>
+      <section class="panel" id="cam-p">
+        <h2><span>Drone and Camera</span><span class="hsum" id="sum-cam"></span></h2>
         <div class="fields">
           <label class="full"><span class="lt">Drone / payload<button type="button" class="info" data-info="preset" aria-expanded="false" aria-label="About drone / payload">i</button></span>
             <div class="in"><select id="preset"></select></div>
@@ -529,13 +595,13 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         <h3 class="subh">Flight</h3>
         <div class="fields">
           <div class="full slider">
-            <label class="sl-head" for="alt"><span class="lt">Altitude AGL<button type="button" class="info" data-info="alt" aria-expanded="false" aria-label="About altitude agl">i</button></span> <span class="numv"><input type="number" id="alt" inputmode="decimal" step="any"><span class="nu" id="alt-u"></span></span></label>
+            <label class="sl-head" for="alt"><span class="lt">Altitude AGL<button type="button" class="info" data-info="alt" aria-expanded="false" aria-label="About altitude agl">i</button></span> <span class="numv stepper"><button type="button" class="step" data-step="alt" data-d="-1" aria-label="Lower altitude">−</button><input type="number" id="alt" inputmode="decimal" step="any"><span class="nu" id="alt-u"></span><button type="button" class="step" data-step="alt" data-d="1" aria-label="Raise altitude">+</button></span></label>
             <input type="range" id="alt-r" aria-label="Altitude AGL slider">
             <div class="scale" id="alt-scale"></div>
             <span class="fhint" id="althint"></span>
           </div>
           <div class="full slider">
-            <label class="sl-head" for="spd"><span class="lt">Flight speed<button type="button" class="info" data-info="spd" aria-expanded="false" aria-label="About flight speed">i</button></span> <span class="numv"><input type="number" id="spd" inputmode="decimal" step="any"><span class="nu" id="spd-u"></span></span></label>
+            <label class="sl-head" for="spd"><span class="lt">Flight speed<button type="button" class="info" data-info="spd" aria-expanded="false" aria-label="About flight speed">i</button></span> <span class="numv stepper"><button type="button" class="step" data-step="spd" data-d="-1" aria-label="Lower speed">−</button><input type="number" id="spd" inputmode="decimal" step="any"><span class="nu" id="spd-u"></span><button type="button" class="step" data-step="spd" data-d="1" aria-label="Raise speed">+</button></span></label>
             <input type="range" id="spd-r" aria-label="Flight speed slider">
             <div class="scale" id="spd-scale"></div>
             <span class="fhint" id="spdhint"></span>
@@ -587,10 +653,18 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
 
     <!-- OUTPUTS -->
     <div class="col out">
+      <section class="panel" id="check">
+        <h2><span>Flight check</span><span class="hsum" id="sum-check"></span></h2>
+        <div class="vhead" id="vhead" aria-live="polite"><b id="vword"></b><span id="vtext"></span></div>
+        <div class="status" id="status"></div>
+        <button type="button" class="recbtn vfix" id="vfix" hidden>Fix settings</button>
+        <p class="hint" id="vnote" aria-live="polite"></p>
+      </section>
+
       <section class="guard" id="guard" aria-live="polite"></section>
 
       <section class="panel" id="sharp">
-        <h2><span>Image sharpness</span><span class="est">estimate</span></h2>
+        <h2><span>Image sharpness</span><span class="est">estimate</span><span class="hsum" id="sum-sharp"></span></h2>
         <div class="sh-top">
           <svg class="donut" viewBox="0 0 100 100" width="92" height="92" role="img" aria-labelledby="dnt">
             <circle cx="50" cy="50" r="42" fill="none" stroke="var(--field)" stroke-width="11"/>
@@ -609,11 +683,6 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         </div>
       </section>
 
-      <section class="panel">
-        <h2>Mission check</h2>
-        <div class="status" id="status"></div>
-      </section>
-
       <section class="panel" id="msp" hidden>
         <h2><span>Multispectral camera</span><span class="est">auto exposure</span></h2>
         <table><tbody id="ms-rows"></tbody></table>
@@ -623,7 +692,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       <div class="big" id="big"></div>
 
       <section class="panel" id="pilot">
-        <h2><span id="pilot-title">DJI Pilot 2 settings</span><button type="button" class="copybtn" id="copy">Copy</button></h2>
+        <h2><span id="pilot-title">DJI Pilot 2 settings</span><button type="button" class="copybtn" id="copy">Copy</button><span class="hsum" id="sum-pilot"></span></h2>
         <p class="pilot-warn" id="pilotwarn" hidden></p>
         <div class="pilot">
           <div><h3>Mapping route</h3><table><tbody id="p-route"></tbody></table></div>
@@ -673,7 +742,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   </footer>
 </div>
 
-<button type="button" class="floatsharp" id="fs" hidden aria-label="Image sharpness score. Show details.">
+<button type="button" class="floatsharp" id="fs" hidden aria-label="Flight check and image sharpness. Show details.">
+  <span class="fs-go" id="fs-go"></span>
   <svg viewBox="0 0 100 100" width="40" height="40" aria-hidden="true">
     <circle cx="50" cy="50" r="40" fill="none" stroke="var(--field)" stroke-width="14"/>
     <circle id="fs-ring" cx="50" cy="50" r="40" fill="none" stroke-width="14" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="0 252"/>
@@ -1262,7 +1332,30 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     if (alt > 121.92) checks.push(["warn", `Altitude above 120 m / 400 ft AGL`]);
     const rolling = p ? !!p.electronic : $("stype").value === "rolling";
     if (rolling) checks.push(["warn", "Electronic shutter — rolling-shutter distortion"]);
+    // Light that is getting old is a field risk on long missions: nudge a re-measure
+    if (measuredEv !== null && lightAt && Date.now() - lightAt >= LIGHT_STALE_MIN * 60000)
+      checks.push(["warn", `Light measured ${Math.floor((Date.now() - lightAt) / 60000)} min ago — re-measure`, "light"]);
+    const rank = { bad: 0, warn: 1, good: 2 };
+    checks.sort((a, b) => rank[a[0]] - rank[b[0]]);
     $("status").innerHTML = checks.map(([c, s2]) => `<span class="pill ${c}">${s2}</span>`).join("");
+    const nBad = checks.filter(c => c[0] === "bad").length, nWarn = checks.filter(c => c[0] === "warn").length;
+    const vlv = nBad ? "bad" : nWarn ? "warn" : "good";
+    const vWord = { good: "Go", warn: "Caution", bad: "No-go" }[vlv];
+    const vMsg = vlv === "good" ? `All ${checks.length} checks pass${capM ? ` for ${mName}` : ""}. Enter the settings below in ${p && (p.app || p.saved) ? "your flight app" : "DJI Pilot 2"}.`
+      : vlv === "warn" ? `${nWarn} thing${nWarn > 1 ? "s" : ""} to check before flying.`
+      : `${nBad} problem${nBad > 1 ? "s" : ""} to fix before flying.`;
+    $("vhead").className = "vhead " + vlv;
+    $("vword").textContent = vWord;
+    $("vtext").textContent = vMsg;
+    // Fix settings re-runs the recommendation; it can't fix altitude rules, rolling shutter or old light
+    const fixable = checks.some(c => c[0] !== "good" && !/minimum|120 m|Electronic shutter|re-measure/.test(c[1]));
+    $("vfix").hidden = vlv === "good" || !fixable;
+    $("fs-go").className = "fs-go " + vlv; $("fs-go").textContent = vWord;
+    sum("sum-check", `${vWord} · ${vlv === "good" ? "all checks pass" : vlv === "warn" ? `${nWarn} to check` : `${nBad} to fix`}`, vlv);
+    sum("sum-sharp", `${sh0.score}% · ${st.label.toLowerCase()}`);
+    sum("sum-pilot", `f/${N} · 1/${ss.toLocaleString()} s · ISO ${iso.toLocaleString()} · ${spdS(v)}`);
+    sum("sum-mission", M().name);
+    sum("sum-cam", `${p ? (p.short || p.name.replace(/^DJI (Zenmuse )?/, "")) : "Custom"}${p && p.lenses ? ` ${+$("lens").value} mm` : ""} · ${gNow} ${gNowU} at ${len(alt, 0)}`);
 
     // ---- Headline numbers
     $("big").innerHTML = [
@@ -1625,6 +1718,21 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     });
   });
   $("rec").addEventListener("click", recommend);
+  $("vfix").addEventListener("click", () => {
+    recommend();
+    $("vnote").innerHTML = $("rectext").innerHTML || "Settings re-picked for this light, altitude and mission.";
+  });
+  // −/+ steppers: whole steps a gloved thumb can hit (5 m / 10 ft, 0.5 m/s / 1 mph)
+  const STEP = { alt: [5, 10], spd: [0.5, 1] };
+  document.querySelectorAll(".step").forEach(b => b.addEventListener("click", e => {
+    e.preventDefault();                                               // inside a label: don't focus the box
+    const id = b.dataset.step, d = +b.dataset.d, st = STEP[id][imp() ? 1 : 0], el = $(id);
+    const v = parseFloat(el.value) || 0, [lo, hi] = LIMIT[id][state.units];
+    let nv = d > 0 ? Math.floor(v / st + 1e-9) * st + st : Math.ceil(v / st - 1e-9) * st - st;
+    nv = Math.min(hi, Math.max(d < 0 && v > st ? st : lo, Math.round(nv * 100) / 100));
+    el.value = nv;
+    el.dispatchEvent(new CustomEvent("input", { bubbles: true, detail: "step" }));
+  }));
   // ---- Mission type: picks the drone and lens, ISO ceiling and starting altitude
   function setMission(id, apply) {
     state.mission = MISSIONS[id] ? id : "other";
@@ -1676,7 +1784,10 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const sel2 = window.getSelection(); sel2.removeAllRanges(); sel2.addRange(r);
   }
   // Any manual change makes the last recommendation stale (Recommend sets values without firing events)
-  ["input", "change"].forEach(ev => $("wrap").addEventListener(ev, () => { $("rectext").textContent = ""; }));
+  ["input", "change"].forEach(ev => $("wrap").addEventListener(ev, e => {
+    $("rectext").textContent = "";
+    if (e.isTrusted || e.detail === "step") { $("vnote").textContent = ""; $("lm-chg").hidden = true; }
+  }));
   ["u-m", "u-i"].forEach(id => $(id).addEventListener("click", () => { $("rectext").textContent = ""; }));
   $("t-quick").onclick = () => setMode("quick");
   $("t-adv").onclick = () => setMode("advanced");
@@ -1773,6 +1884,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   const LIGHT_KEY = "dl-light-v1", LIGHT_STALE_MIN = 30, LIGHT_KEEP_H = 3;
   let lightAt = null;
   const clock = ms => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  function sum(id, text, lvl) { const el = $(id); if (!el) return; el.textContent = text; el.className = "hsum" + (lvl && lvl !== "good" || lvl === "good" && id === "sum-check" ? " " + lvl : ""); }
+  let wasStale = false;
   function lightUI() {
     const has = measuredEv !== null && lightAt, mins = has ? Math.floor((Date.now() - lightAt) / 60000) : 0;
     const stale = has && mins >= LIGHT_STALE_MIN;
@@ -1782,9 +1895,15 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       : `Preset estimate<span class="ph-only"> · measure for real light</span>`;
     document.querySelectorAll(".lm-t").forEach(t => t.textContent = has ? "Re-measure light" : "Measure light");
     if (stale && /\bok\b/.test($("lm-msg").className)) $("lm-msg").className = "hint";
+    const lp0 = LIGHT_ORDER[+$("light").value] || LIGHT_ORDER[LIGHT_ORDER.length - 1];
+    sum("sum-light", has ? `EV ${fmt(measuredEv, 1)} · ${clock(lightAt)}${stale ? " · re-measure" : ""}` : `EV ${lp0.ev} · preset`, stale ? "warn" : null);
+    if (stale !== wasStale) { wasStale = stale; calc(); }        // puts the old-light warning into Flight check
   }
+  // What the pilot actually types: aperture, shutter, ISO and speed, as shown in the Pilot 2 card
+  const pilotSnap = () => ({ Aperture: `f/${getAp()}`, Shutter: `1/${getSs().toLocaleString()} s`, ISO: getIso().toLocaleString(), Speed: spdS(imp() ? +$("spd").value * MPH : +$("spd").value) });
   function applyEv(ev, how, at) {
     const msg = $("lm-msg");
+    const fresh = !at, prevEv = measuredEv !== null ? measuredEv : curLight().ev, prevAt = lightAt, before = fresh ? pilotSnap() : null;
     measuredEv = Math.round(ev * 10) / 10;
     lightAt = at || Date.now();
     try { localStorage.setItem(LIGHT_KEY, JSON.stringify({ ev: measuredEv, how, at: lightAt })); } catch (e) {}
@@ -1796,6 +1915,18 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     msg.textContent = `${how}. Exposure now uses this reading; move the preset slider to go back.`
       + (ev < LIGHT_ORDER[0].ev - 0.5 ? " Very low light: expect high ISO or a slow shutter." : "");
     lightUI();
+    if (!fresh) return;
+    // A new reading re-picks the settings for this light, then lists only what changed
+    recommend();
+    const after = pilotSnap(), chg = Object.keys(after).filter(k => after[k] !== before[k]);
+    const dEv = measuredEv - prevEv, box = $("lm-chg");
+    const since = prevAt ? `since ${clock(prevAt)}` : "from the preset";
+    const lightLine = Math.abs(dEv) < 0.25 ? `Light about the same ${since}.` : `Light ${dEv > 0 ? "up" : "down"} ${fmt(Math.abs(dEv), 1)} EV ${since}.`;
+    box.hidden = false;
+    box.className = "lchg" + (chg.length ? "" : " same");
+    box.innerHTML = chg.length
+      ? `${lightLine} <b>Change in ${preset() && (preset().app || preset().saved) ? "your flight app" : "DJI Pilot 2"}:</b><ul>${chg.map(k => `<li>${k} <s>${before[k]}</s> → <b>${after[k]}</b></li>`).join("")}</ul>`
+      : `${lightLine} <b>No changes needed</b>: your settings still suit this light.`;
   }
   // Called by the iPhone app with the camera's live auto-exposure (offset: EV still to settle)
   window.dronelandApplyReading = (N, t, iso, offset, src) => {
@@ -1989,23 +2120,74 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   document.addEventListener("click", e => { if (!$("set-pop").hidden && !e.target.closest(".setwrap")) setPop(false); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("set-pop").hidden) { setPop(false); $("set-open").focus(); } });
 
-  // ---- Collapsible sections (phones only): the inputs (Light, Mission, Drone and Camera) start open, results collapsed
+  // ---- Theme: Auto follows the phone; Light is easiest to read in sun
+  const THEME_KEY = "dl-theme";
+  let themeSet = false;
+  function setTheme(t, save) {
+    const root = document.documentElement;
+    if (t === "light" || t === "dark") { root.dataset.theme = t; themeSet = true; }
+    else { if (themeSet) root.removeAttribute("data-theme"); themeSet = false; t = "auto"; }
+    document.querySelectorAll("[data-theme-set]").forEach(b => b.setAttribute("aria-pressed", b.dataset.themeSet === t));
+    if (save) try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  }
+  document.querySelectorAll("[data-theme-set]").forEach(b => b.addEventListener("click", () => setTheme(b.dataset.themeSet, true)));
+  try { const t0 = localStorage.getItem(THEME_KEY); if (t0) setTheme(t0, false); } catch (e) {}
+
+  // ---- Keep screen on (Screen Wake Lock): the lock drops when the app is hidden, so it is re-taken on return
+  const AWAKE_KEY = "dl-awake";
+  let wakeWanted = false, wake = null;
+  async function takeWake() {
+    if (!wakeWanted || wake || document.visibilityState !== "visible") return;
+    try { wake = await navigator.wakeLock.request("screen"); wake.addEventListener("release", () => { wake = null; }); $("awake-h").textContent = "Screen stays on while Droneland is open. Uses more battery."; }
+    catch (e) { $("awake-h").textContent = "Your browser didn't allow this just now; it will try again on your next tap."; }
+  }
+  function setAwake(on, save) {
+    wakeWanted = on; $("awake").setAttribute("aria-pressed", on);
+    if (save) try { localStorage.setItem(AWAKE_KEY, on ? "1" : "0"); } catch (e) {}
+    if (on) takeWake(); else { if (wake) wake.release().catch(() => {}); wake = null; $("awake-h").textContent = "Stops the phone locking between flights. Uses more battery."; }
+  }
+  if ("wakeLock" in navigator) {
+    $("awake-w").hidden = false;
+    $("awake").addEventListener("click", () => setAwake(!wakeWanted, true));
+    document.addEventListener("visibilitychange", takeWake);
+    document.addEventListener("pointerdown", takeWake, { passive: true });
+    try { if (localStorage.getItem(AWAKE_KEY) === "1") setAwake(true, false); } catch (e) {}
+  }
+
+  // ---- Offline: the hosted app caches itself so it works on sites with no signal
+  const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  function netUI() { $("netchip").hidden = navigator.onLine !== false; }
+  window.addEventListener("online", netUI); window.addEventListener("offline", netUI); netUI();
+  if (HOSTED && "serviceWorker" in navigator && location.protocol === "https:") {
+    $("off-w").hidden = false;
+    const offMsg = ready => $("off-h").textContent = (ready ? "Saved on this phone: works with no signal." : "Saving for offline use…")
+      + (STANDALONE ? "" : IOS ? " Tip: Share › Add to Home Screen opens it like an app." : " Tip: install it from your browser menu to open it like an app.");
+    offMsg(!!navigator.serviceWorker.controller);
+    navigator.serviceWorker.register("sw.js").then(r => navigator.serviceWorker.ready).then(() => offMsg(true)).catch(() => { $("off-w").hidden = true; });
+  }
+
+  // ---- Collapsible sections (phones only). Inputs, Flight check and the Pilot 2 card start open; the rest collapsed.
+  // Each card remembers being opened or closed on this phone, so a returning pilot sees their own layout.
+  const COL_KEY = "dl-cards-v1", OPEN = ["light-p", "mission-p", "cam-p", "check", "pilot"];
+  let colSaved = {};
+  try { colSaved = JSON.parse(localStorage.getItem(COL_KEY) || "{}") || {}; } catch (e) {}
   document.querySelectorAll("section.panel > h2").forEach(h => {
     const sec = h.parentElement;
     if (h.firstChild && h.firstChild.nodeType === 3 && h.firstChild.textContent.trim()) {
       const sp = document.createElement("span"); sp.textContent = h.firstChild.textContent.trim(); h.replaceChild(sp, h.firstChild);
     }
-    const name = h.querySelector("span").textContent.trim();
+    const name = h.querySelector("span").textContent.trim(), sid = sec.id;
     const b = document.createElement("button");
     b.type = "button"; b.className = "colbtn";
     b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
     h.appendChild(b);
     const set = c => { sec.classList.toggle("collapsed", c); b.setAttribute("aria-expanded", !c); b.setAttribute("aria-label", `${c ? "Expand" : "Collapse"} ${name}`); };
-    set(!["Light conditions", "Mission", "Drone and Camera"].includes(name));
+    set(sid && sid in colSaved ? !!colSaved[sid] : !OPEN.includes(sid));
     h.addEventListener("click", e => {
       if (!matchMedia("(max-width: 700px)").matches) return;                         // phones only
       if (e.target.closest("button") && e.target.closest("button") !== b) return;   // e.g. Copy
       set(!sec.classList.contains("collapsed"));
+      if (sid) { colSaved[sid] = sec.classList.contains("collapsed"); try { localStorage.setItem(COL_KEY, JSON.stringify(colSaved)); } catch (err) {} }
     });
   });
   try { if (localStorage.getItem("smc-mode") === "advanced") setMode("advanced"); } catch (e) {}
@@ -2121,13 +2303,23 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   })();
 
 
-  // ---- Floating sharpness badge: appears once less than 65% of the sharpness donut is on screen
+  // ---- Floating readout: on phones it shows the verdict whenever the Flight check card is off screen;
+  // on wider screens it is the sharpness badge, shown once the sharpness donut scrolls away
+  const phoneQ = matchMedia("(max-width: 700px)");
   if ("IntersectionObserver" in window) {
-    new IntersectionObserver(([e]) => { $("fs").hidden = e.intersectionRatio >= 0.65; },
-      { threshold: [0, 0.65, 1] }).observe(document.querySelector("svg.donut"));
+    const seen = new Map();
+    const upd = () => {
+      const k = phoneQ.matches ? $("check") : document.querySelector("svg.donut");
+      $("fs").hidden = (seen.get(k) || 0) >= (phoneQ.matches ? 0.3 : 0.65);
+    };
+    const io = new IntersectionObserver(es => { es.forEach(e => seen.set(e.target, e.intersectionRatio)); upd(); }, { threshold: [0, 0.3, 0.65, 1] });
+    io.observe($("check")); io.observe(document.querySelector("svg.donut"));
+    phoneQ.addEventListener && phoneQ.addEventListener("change", upd);
   }
-  $("fs").onclick = () => { if ($("sharp").classList.contains("collapsed") && matchMedia("(max-width: 700px)").matches) $("sharp").querySelector("h2").click();
-    $("sharp").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+  $("fs").onclick = () => {
+    const tgt = phoneQ.matches ? $("check") : $("sharp");
+    if (tgt.classList.contains("collapsed") && phoneQ.matches) tgt.querySelector("h2").click();
+    tgt.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   };
 
   // ---- Quick GSD side tool: MP + 35 mm-equivalent focal length + altitude.
