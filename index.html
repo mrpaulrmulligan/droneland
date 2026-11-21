@@ -351,7 +351,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
 /* ---- Field use: verdict first, summaries on collapsed cards, glove-size steppers */
 .vhead { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 8px; border: 1.5px solid; margin-bottom: 12px; }
 .vhead b { font: 700 30px/1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
-.vhead span { font: 600 15px/1.3 var(--f-body); color: var(--ink); }
+.vhead span { font: 600 15px/1.3 var(--f-body); color: var(--ink); text-wrap: balance; }
 .vhead.good { border-color: var(--good); background: var(--good-bg); } .vhead.good b { color: var(--good); }
 .vhead.warn { border-color: var(--warn); background: var(--warn-bg); } .vhead.warn b { color: var(--warn); }
 .vhead.bad  { border-color: var(--bad);  background: var(--bad-bg); }  .vhead.bad b  { color: var(--bad); }
@@ -1340,7 +1340,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const nBad = checks.filter(c => c[0] === "bad").length, nWarn = checks.filter(c => c[0] === "warn" && c[2] !== "soft").length;
     const vlv = nBad ? "bad" : nWarn ? "warn" : "good";
     const vWord = { good: "Go", warn: "Caution", bad: "No-go" }[vlv];
-    const vMsg = vlv === "good" ? `Inside every limit${capM ? ` for ${mName}` : ""}. Enter the settings below in ${p && (p.app || p.saved) ? "your flight app" : "DJI Pilot 2"}.`
+    const vMsg = vlv === "good" ? `Inside every limit${capM ? ` for ${mName}` : ""}. Enter these in ${p && (p.app || p.saved) ? "your flight app" : "DJI Pilot 2"}.`
       : vlv === "warn" ? `${nWarn} thing${nWarn > 1 ? "s" : ""} to check before flying.`
       : `${nBad} problem${nBad > 1 ? "s" : ""} to fix before flying.`;
     $("vhead").className = "vhead " + vlv;
