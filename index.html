@@ -899,7 +899,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
   ];
   const $ = id => document.getElementById(id);
   const FT = 0.3048, MPH = 0.44704, HA_AC = 2.47105;
-  const state = { units: "metric", mission: null, recWhy: [] };
+  const state = { units: "metric", mission: null, recWhy: [], autoCam: true };
   // Droneland mission types: each sets the drone, lens, ISO ceiling and altitude rule, in that order of decision
   const MISSIONS = {
     site:  { name: "Site establishment", lower: "site establishment", drones: ["p1"], lenses: { p1: [35, 50] }, lens: 35, isoCap: 1600, altMin: 50, alt: 60,
@@ -1203,7 +1203,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     if (!el) return;
     const sec = el.closest("section.panel");
     if (sec && sec.classList.contains("collapsed")) sec.querySelector("h2").click();
-    if (el.scrollIntoView) el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    if (el.scrollIntoView) el.scrollIntoView({ block: "center" });
     try { el.focus({ preventScroll: true }); } catch (e) {}
   }
   function readyUI(miss) {
@@ -1228,7 +1228,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     $("vrec").hidden = true;
     $("fs-go").className = "fs-go wait"; $("fs-go").textContent = "Set up";
     const list = miss.map(k => NEED[k][1]);
-    $("fs-need").textContent = ready ? "Working out settings…" : `${n} to enter: ${list.join(", ")}`;
+    $("fs-need").textContent = ready ? "Working out settings…" : list.join(", ").replace(/^./, c => c.toUpperCase());
     $("fs").setAttribute("aria-label", ready ? "Working out the camera settings" : `Set up: ${n} to enter. Go to the ${list[0]}.`);
     sum("sum-check", ready ? "Set up · working out" : `Set up · ${n} to enter`, "warn");
     sum("sum-mission", state.mission ? M().name : "Choose the mission", state.mission ? null : "warn");
@@ -1248,6 +1248,19 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     state.needRec = false;
     recKeep = true;
     try { recommend(); } finally { recKeep = false; }
+  }
+  // Until the pilot moves aperture, shutter or ISO by hand, those follow the inputs (re-picked 0.7 s after a change).
+  // The speed stays the pilot's; anything that changed is listed under the verdict.
+  let followT = 0;
+  function followSoon() { clearTimeout(followT); followT = setTimeout(follow, 700); }
+  function follow() {
+    if (!state.autoCam || !state.picked || !last) return;
+    const before = pilotSnap();
+    recKeep = true;
+    try { recommend(); } finally { recKeep = false; }
+    if (!last) return;
+    const after = pilotSnap(), chg = ["Aperture", "Shutter", "ISO"].filter(k => after[k] !== before[k]);
+    if (chg.length) $("vnote").innerHTML = `Camera settings updated: ${chg.map(k => `${k} <s>${before[k]}</s> → <b>${after[k]}</b>`).join(", ")}.`;
   }
   // Recommended settings for Flight check: run Recommend, note what it would change, then put everything back
   function recPreview() {
@@ -1897,6 +1910,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
   $("rec").addEventListener("click", recommend);
   $("vfix").addEventListener("click", () => {
     const was = pilotSnap();
+    state.autoCam = true;
     recKeep = !state.speedIssue;                          // same rule as the preview, so it applies exactly what was shown
     try { recommend(); } finally { recKeep = false; }
     const now = pilotSnap(), chg = Object.keys(now).filter(k => now[k] !== was[k]), p = preset();
@@ -1932,7 +1946,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     $("rectext").textContent = "";
     applyPreset(); calc();
   }
-  document.querySelectorAll(".mis-pick button").forEach(b => b.addEventListener("click", () => { setMission(b.dataset.mis, true); if (state.picked) { recKeep = true; try { recommend(); } finally { recKeep = false; } } }));
+  document.querySelectorAll(".mis-pick button").forEach(b => b.addEventListener("click", () => { setMission(b.dataset.mis, true); if (state.picked && state.autoCam) followSoon(); }));
   $("cricket").addEventListener("change", calc);
   try { localStorage.removeItem("dl-mission"); } catch (e) {}   // old always-remembered mission; now part of the 2-hour session
   setMission(null, false);
@@ -1963,7 +1977,11 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
   // Any manual change makes the last recommendation stale (Recommend sets values without firing events)
   ["input", "change"].forEach(ev => $("wrap").addEventListener(ev, e => {
     $("rectext").textContent = "";
-    if (e.isTrusted || e.detail === "step") { $("vnote").textContent = ""; $("lm-chg").hidden = true; }
+    if (e.isTrusted || e.detail === "step") {
+      $("vnote").textContent = ""; $("lm-chg").hidden = true;
+      if (/^(ap|ss|iso)-r$/.test(e.target.id)) state.autoCam = false;    // the pilot set the camera by hand
+      else if (state.autoCam && state.picked && e.target.id !== "lm-file") followSoon();
+    }
   }));
   ["u-m", "u-i"].forEach(id => $(id).addEventListener("click", () => { $("rectext").textContent = ""; }));
   $("t-quick").onclick = () => setMode("quick");
@@ -2095,6 +2113,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     if (!fresh) return;
     // A new reading re-picks the settings for this light, then lists only what changed.
     // Speed changes only if blur or photo spacing would otherwise be over the limit.
+    state.autoCam = true;
     recKeep = true; try { recommend(); } finally { recKeep = false; }
     if (last && state.speedIssue) recommend();
     if (!last) { $("lm-chg").hidden = true; return; }
@@ -2303,7 +2322,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
   function sessSave(withCam) {
     if (!sessOn || restoring || previewing) return;
     if (state.pendingSess) { sessTouch(); return; }        // a saved profile is still loading: keep what was stored
-    const v = { units: state.units, mission: state.mission, cricket: $("cricket").checked, preset: sel.value, picked: !!state.picked };
+    const v = { units: state.units, mission: state.mission, cricket: $("cricket").checked, preset: sel.value, picked: !!state.picked, autoCam: state.autoCam };
     SESS_IDS.forEach(id => v[id] = $(id).value);
     if (withCam) { v.ap = getAp(); v.ss = getSs(); v.iso = getIso(); }
     const has = !!(state.mission || sel.value || $("alt").value !== "" || $("spd").value !== "");
@@ -2328,7 +2347,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     if (v.ap != null) { $("ap-r").value = nearestIdx(apList, v.ap); fillShutters(); }
     if (v.ss != null) $("ss-r").value = nearestIdx(ssList, v.ss);
     if (v.iso != null) $("iso-r").value = nearestIdx(isoList, v.iso);
-    state.picked = !!v.picked;
+    state.picked = !!v.picked; state.autoCam = v.autoCam !== false;
     wasReady = v.ap != null ? true : false;                  // saved without camera settings: pick them once complete
     calc();
   }
@@ -2342,7 +2361,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     ["mp", "feq", "alt", "spd"].forEach(id => $(id).value = "");
     ["fo", "so", "bl", "area", "relief", "isocap"].forEach(id => $(id).value = imp() && (id === "relief") ? Math.round(defaults[id] / FT) : imp() && id === "area" ? Math.round(defaults[id] * HA_AC) : defaults[id]);
     $("orient").value = defaults.orient;
-    state.lastP = null; state.lensFor = null; state.selectLens = null; state.pendingSess = null; state.picked = false; state.needRec = false;
+    state.lastP = null; state.lensFor = null; state.selectLens = null; state.pendingSess = null; state.picked = false; state.needRec = false; state.autoCam = true; clearTimeout(followT);
     sel.value = "";
     setMission(null, false);
     ["lm-chg", "vrec"].forEach(id => $(id).hidden = true);
