@@ -377,6 +377,41 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
 .settog[aria-pressed="true"] i { background: var(--good); }
 .settog[aria-pressed="true"] i::after { transform: translateX(16px); }
 .fs-go { display: none; }
+/* ---- Nothing pre-filled: fields still to enter get a dashed amber outline; results wait for them */
+.need { outline: 2px dashed var(--accent); outline-offset: 2px; }
+.numv.need, .mis-pick.need { outline-offset: 4px; border-radius: 8px; }
+select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
+.slider.unset input[type="range"] { opacity: .35; }
+.unready .camset, .unready #assume, .unready .out > :not(#check) { display: none !important; }
+.vhead.wait { border-color: var(--accent); border-style: dashed; background: var(--accent-soft); } .vhead.wait b { color: var(--ink); }
+.needs { display: flex; flex-wrap: wrap; gap: 8px; }
+.needbtn { min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1.5px dashed var(--accent); background: var(--panel); color: var(--ink); font: 600 15px var(--f-body); cursor: pointer; touch-action: manipulation; }
+.needbtn:hover { background: var(--accent-soft); }
+/* Recommended settings: shown in Flight check whenever it isn't Go */
+.vrec { margin-top: 12px; padding: 12px 14px; border-radius: 8px; border: 1.5px solid var(--accent); background: var(--accent-soft); }
+.vrec[hidden] { display: none; }
+.vrec.none { border-color: var(--line); background: var(--field); }
+.vrec-h { font: 700 13px var(--f-display); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.vrec ul { list-style: none; margin: 0; padding: 0; }
+.vrec li { display: flex; align-items: baseline; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); font: 500 16px var(--f-mono); font-variant-numeric: tabular-nums; }
+.vrec li:last-child { border-bottom: 0; }
+.vrec li span { flex: none; min-width: 6.2em; font: 500 14px var(--f-body); color: var(--muted); }
+.vrec li s { color: var(--muted); text-decoration-thickness: 1.5px; }
+.vrec li b { font-weight: 500; color: var(--muted); }
+.vrec li.chg b { font-weight: 700; color: var(--ink); }
+.vrec-why { margin: 8px 0 0; font-size: 13px; line-height: 1.4; }
+.vrec-why:empty { display: none; }
+.vrec .vfix { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.vrec .vfix[hidden] { display: none; }
+/* Active mission kept on this phone */
+.sess { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.sess[hidden], .sess-ask[hidden], .sess .copybtn[hidden] { display: none; }
+.sess-t { flex: 1 1 180px; margin: 0; font-size: 13px; color: var(--muted); }
+.sess-t.cleared { color: var(--warn); font-weight: 600; }
+.sess-ask { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+.sess-ask span { flex-basis: 100%; }
+.fs-need { display: none; }
+#fs.unready .fs-x, #fs.unready .fs-txt, #fs.unready > svg { display: none !important; }
 /* ---- Phones (kept last so these override the base rules above) */
 @media (max-width: 700px) {
   .wrap { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
@@ -404,6 +439,10 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   .hsum.good { color: var(--good) !important; font-weight: 600 !important; } .hsum.warn { color: var(--warn) !important; font-weight: 600 !important; } .hsum.bad { color: var(--bad) !important; font-weight: 600 !important; }
   .fs-go { display: grid; place-items: center; flex: none; min-width: 64px; height: 40px; padding: 0 8px; border-radius: 8px; font: 700 15px var(--f-display); letter-spacing: .05em; text-transform: uppercase; }
   .fs-go.good { background: var(--s5); color: var(--s5-fg); } .fs-go.warn { background: var(--s3); color: var(--s3-fg); } .fs-go.bad { background: var(--s1); color: var(--s1-fg); }
+  .fs-go.wait { background: var(--accent-soft); color: var(--ink); border: 1.5px dashed var(--accent); }
+  #fs.unready .fs-need { display: block; flex: 1; min-width: 0; font: 600 15px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sess .copybtn { min-height: 40px; padding-inline: 14px; font-size: 14px; }
+  .vrec li { font-size: 17px; }
   .floatsharp > svg { display: none; }
   .fs-txt { order: 4; }
   .guard.good .cause { display: none; }
@@ -509,6 +548,15 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         </div>
         <label class="mis-opt" id="cricket-l" hidden><input type="checkbox" id="cricket"> Turf cricket pitch (low-altitude scan)</label>
         <p class="hint" id="mis-rules" aria-live="polite"></p>
+        <div class="sess" id="sess" hidden>
+          <p class="sess-t" id="sess-t"></p>
+          <button type="button" class="copybtn" id="sess-new">New mission</button>
+          <div class="sess-ask" id="sess-ask" hidden>
+            <span>Clear the mission, drone and flight details? The light reading is kept.</span>
+            <button type="button" class="copybtn danger" id="sess-yes">Clear</button>
+            <button type="button" class="copybtn" id="sess-no">Cancel</button>
+          </div>
+        </div>
       </section>
 
       <section class="panel" id="cam-p">
@@ -523,23 +571,24 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
           </label>
           <label id="mp-l"><span class="lt">Resolution<button type="button" class="info" data-info="mp" aria-expanded="false" aria-label="About resolution">i</button></span><div class="in"><input id="mp" type="number" step="1" min="1"><span class="u">MP</span></div></label>
           <label id="feq-l"><span class="lt">Focal length<button type="button" class="info" data-info="feq" aria-expanded="false" aria-label="About focal length">i</button></span><div class="in"><input id="feq" type="number" step="1" min="4"><span class="u">mm eq.</span></div></label>
-          <div class="full slider">
+          <p class="full hint" id="camwait" hidden>Aperture, shutter and ISO are worked out once the mission, drone, altitude and speed are in.</p>
+          <div class="full slider camset">
             <label class="sl-head" for="ap-r"><span class="lt">Aperture<button type="button" class="info" data-info="ap" aria-expanded="false" aria-label="About aperture">i</button></span> <b id="apv"></b></label>
             <input type="range" id="ap-r" min="0" step="1">
             <div class="scale" id="ap-scale"></div>
           </div>
-          <div class="full slider">
+          <div class="full slider camset">
             <label class="sl-head" for="ss-r"><span class="lt">Shutter speed<button type="button" class="info" data-info="ss" aria-expanded="false" aria-label="About shutter speed">i</button></span> <b id="ssv"></b></label>
             <input type="range" id="ss-r" min="0" step="1">
             <div class="scale" id="ss-scale"></div>
             <span class="fhint" id="ssnote"></span>
           </div>
-          <div class="full slider">
+          <div class="full slider camset">
             <label class="sl-head" for="iso-r"><span class="lt">ISO<button type="button" class="info" data-info="iso" aria-expanded="false" aria-label="About iso">i</button></span> <b id="isov"></b></label>
             <input type="range" id="iso-r" min="0" step="1">
             <div class="scale" id="iso-scale"></div>
           </div>
-          <div class="full expo" id="expo" aria-live="polite"></div>
+          <div class="full expo camset" id="expo" aria-live="polite"></div>
           <label class="adv full spec"><span class="lt">Sensor size<button type="button" class="info" data-info="fmt" aria-expanded="false" aria-label="About sensor size">i</button></span>
             <div class="in"><select id="fmt"></select></div>
           </label>
@@ -593,13 +642,13 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         <h3 class="subh">Flight</h3>
         <div class="fields">
           <div class="full slider">
-            <label class="sl-head" for="alt"><span class="lt">Altitude AGL<button type="button" class="info" data-info="alt" aria-expanded="false" aria-label="About altitude agl">i</button></span> <span class="numv stepper"><button type="button" class="step" data-step="alt" data-d="-1" aria-label="Lower altitude">−</button><input type="number" id="alt" inputmode="decimal" step="any"><span class="nu" id="alt-u"></span><button type="button" class="step" data-step="alt" data-d="1" aria-label="Raise altitude">+</button></span></label>
+            <label class="sl-head" for="alt"><span class="lt">Altitude AGL<button type="button" class="info" data-info="alt" aria-expanded="false" aria-label="About altitude agl">i</button></span> <span class="numv stepper"><button type="button" class="step" data-step="alt" data-d="-1" aria-label="Lower altitude">−</button><input type="number" id="alt" inputmode="decimal" step="any" placeholder="—"><span class="nu" id="alt-u"></span><button type="button" class="step" data-step="alt" data-d="1" aria-label="Raise altitude">+</button></span></label>
             <input type="range" id="alt-r" aria-label="Altitude AGL slider">
             <div class="scale" id="alt-scale"></div>
             <span class="fhint" id="althint"></span>
           </div>
           <div class="full slider">
-            <label class="sl-head" for="spd"><span class="lt">Flight speed<button type="button" class="info" data-info="spd" aria-expanded="false" aria-label="About flight speed">i</button></span> <span class="numv stepper"><button type="button" class="step" data-step="spd" data-d="-1" aria-label="Lower speed">−</button><input type="number" id="spd" inputmode="decimal" step="any"><span class="nu" id="spd-u"></span><button type="button" class="step" data-step="spd" data-d="1" aria-label="Raise speed">+</button></span></label>
+            <label class="sl-head" for="spd"><span class="lt">Flight speed<button type="button" class="info" data-info="spd" aria-expanded="false" aria-label="About flight speed">i</button></span> <span class="numv stepper"><button type="button" class="step" data-step="spd" data-d="-1" aria-label="Lower speed">−</button><input type="number" id="spd" inputmode="decimal" step="any" placeholder="—"><span class="nu" id="spd-u"></span><button type="button" class="step" data-step="spd" data-d="1" aria-label="Raise speed">+</button></span></label>
             <input type="range" id="spd-r" aria-label="Flight speed slider">
             <div class="scale" id="spd-scale"></div>
             <span class="fhint" id="spdhint"></span>
@@ -655,7 +704,12 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         <h2><span>Flight check</span><span class="hsum" id="sum-check"></span></h2>
         <div class="vhead" id="vhead" aria-live="polite"><b id="vword"></b><span id="vtext"></span></div>
         <div class="status" id="status"></div>
-        <button type="button" class="recbtn vfix" id="vfix" hidden>Fix settings</button>
+        <div class="vrec" id="vrec" hidden>
+          <div class="vrec-h" id="vrec-h">Recommended settings</div>
+          <ul id="vrec-list"></ul>
+          <p class="vrec-why" id="vrec-why"></p>
+          <button type="button" class="recbtn vfix" id="vfix">Use these settings</button>
+        </div>
         <p class="hint" id="vnote" aria-live="polite"></p>
       </section>
 
@@ -674,7 +728,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
         <div class="pair" id="pair"></div>
         <div class="contrib adv" id="contrib"></div>
         <p class="hint adv" id="shtip"></p>
-        <div class="recwrap">
+        <div class="recwrap" hidden>
           <button type="button" class="recbtn" id="rec">Recommend settings for this altitude</button>
           <p class="hint" id="recnote"></p>
           <p class="hint" id="rectext" aria-live="polite"></p>
@@ -741,7 +795,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
 </div>
 
 <button type="button" class="floatsharp" id="fs" hidden aria-label="Flight check and image sharpness. Show details.">
-  <span class="fs-go" id="fs-go"></span>
+  <span class="fs-go" id="fs-go"></span><span class="fs-need" id="fs-need"></span>
   <svg viewBox="0 0 100 100" width="40" height="40" aria-hidden="true">
     <circle cx="50" cy="50" r="40" fill="none" stroke="var(--field)" stroke-width="14"/>
     <circle id="fs-ring" cx="50" cy="50" r="40" fill="none" stroke-width="14" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="0 252"/>
@@ -845,7 +899,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   ];
   const $ = id => document.getElementById(id);
   const FT = 0.3048, MPH = 0.44704, HA_AC = 2.47105;
-  const state = { units: "metric", mission: "site" };
+  const state = { units: "metric", mission: null, recWhy: [] };
   // Droneland mission types: each sets the drone, lens, ISO ceiling and altitude rule, in that order of decision
   const MISSIONS = {
     site:  { name: "Site establishment", lower: "site establishment", drones: ["p1"], lenses: { p1: [35, 50] }, lens: 35, isoCap: 1600, altMin: 50, alt: 60,
@@ -861,7 +915,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   // Which mission rule a camera falls under: built-in presets by id; the saved Phase One profile by name
   const kindOf = p => p.saved && /phase\s*one/i.test(p.name) ? "phaseone" : p.id;
   const altFloor = () => M().altMin && !(M().cricket && $("cricket").checked) ? M().altMin : 0;
-  const defaults = { preset: "m3e", alt: 80, spd: 4, fo: 80, so: 70, bl: 0.5, area: 40, ss: 2000, ap: 5.6, relief: 5, orient: "across", mp: 20, feq: 24, smax: 2000, iso: 100, isomax: 6400, isocap: 640, isomin: 100, light: "clear" };
+  // No defaults for the mission, drone, lens, altitude or speed: every pilot enters them (kept for 2 hours, see Session)
+  const defaults = { fo: 80, so: 70, bl: 0.5, area: 40, ss: 2000, ap: 5.6, relief: 5, orient: "across", smax: 2000, iso: 100, isomax: 6400, isocap: 640, isomin: 100, light: "clear" };
   let apList = [], ssList = [], isoList = [], last = null;
 
   const sel = $("preset"), fmtSel = $("fmt");
@@ -870,11 +925,12 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   function buildPresetOptions() {
     const cur = sel.value;
     sel.innerHTML = "";
+    const ph = new Option("Choose drone or payload…", ""); ph.disabled = true; sel.add(ph);   // nothing pre-selected
     const only = M().drones;
     if (only) {                                       // mission fixes the drone (saved profiles only if named, no custom)
       [...PRESETS, ...saved].filter(p => p.id !== "custom" && only.includes(kindOf(p))).forEach(p => sel.add(new Option(p.name, p.id)));
-      const ids = [...sel.options].map(o => o.value);
-      sel.value = ids.includes(cur) ? cur : ids[0];
+      const ids = [...sel.options].map(o => o.value).filter(Boolean);
+      sel.value = ids.includes(cur) ? cur : "";
       return sel.value !== cur;
     }
     PRESETS.filter(p => p.id !== "custom").forEach(p => sel.add(new Option(p.name, p.id)));
@@ -884,7 +940,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       sel.appendChild(g);
     }
     sel.add(new Option("Custom camera", "custom"));
-    sel.value = [...sel.options].some(o => o.value === cur) ? cur : "custom";
+    sel.value = [...sel.options].some(o => o.value === cur) ? cur : "";
     return sel.value !== cur;
   }
   buildPresetOptions();
@@ -988,7 +1044,8 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const p = preset();
     const locked = !!p;
     // Switching to Custom starts from the previous camera's specs, so a profile is easy to copy and adjust
-    if (!p && state.lastP) { const lp = state.lastP; $("mp").value = lp.mp; $("feq").value = lp.lenses ? Math.round(+$("lens").value * 43.27 / Math.hypot(lp.sw, lp.sh)) : lp.eq; }
+    const none = !sel.value;
+    if (sel.value === "custom" && state.lastP) { const lp = state.lastP; $("mp").value = lp.mp; $("feq").value = lp.lenses ? Math.round(+$("lens").value * 43.27 / Math.hypot(lp.sw, lp.sh)) : lp.eq; }
     state.lastP = p || null;
     if (p) {
       $("sw").value = p.sw; $("sh").value = p.sh; $("mi").value = p.mi; $("smax").value = p.smax; $("isomax").value = p.isoMax;
@@ -997,9 +1054,9 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       if (!p.lenses) { $("fmax").value = p.fmax; $("fmin").value = p.fmin; }
       syncFormat();
     }
-    ["fmt", "sw", "sh", "fmax", "fmin", "smax", "isomax", "isomin", "stype", "mi"].forEach(id => $(id).disabled = locked);
+    ["fmt", "sw", "sh", "fmax", "fmin", "smax", "isomax", "isomin", "stype", "mi"].forEach(id => $(id).disabled = locked || none);
     fillIsos();
-    $("mp-l").hidden = $("feq-l").hidden = locked;
+    $("mp-l").hidden = $("feq-l").hidden = locked || none;
     $("camsum").hidden = !locked;
     $("lens-l").hidden = !(p && p.lenses);
     if (p && p.lenses) {
@@ -1008,14 +1065,15 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       lens.innerHTML = "";
       const keep = M().lenses && M().lenses[kindOf(p)], fit = keep ? p.lenses.filter(l => keep.includes(l.mm)) : [];
       const ls = fit.length ? fit : p.lenses;
+      const lph = new Option("Choose lens…", ""); lph.disabled = true; lens.add(lph);   // the pilot picks the lens fitted
       ls.forEach(l => lens.add(new Option(l.name, l.mm)));
-      lens.value = prev != null && ls.some(l => String(l.mm) === String(prev)) ? prev : ls.some(l => l.mm === p.fl) ? p.fl : ls[0].mm;
+      lens.value = prev != null && prev !== "" && ls.some(l => String(l.mm) === String(prev)) ? prev : "";
       state.lensFor = p.id; state.selectLens = null;
     }
     applyLens();
     profUI();
-    $("wrap").classList.toggle("cam-locked", !!locked);   // phones hide fixed specs
-    $("camhint").textContent = locked
+    $("wrap").classList.toggle("cam-locked", !!locked || none);   // phones hide fixed specs
+    $("camhint").textContent = none ? "Choose the drone or payload you're flying." : locked
       ? p.saved
         ? "Saved profile: specs are locked. To change them, choose Custom camera, enter the new specs and save a new profile."
         : (p.electronic
@@ -1072,8 +1130,9 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   function setUnits(u) {
     if (u === state.units) return;
     const toImp = u === "imperial";
-    const conv = (x, k, d) => round(toImp ? x / k : x * k, d);
-    const next = { alt: conv(+$("alt").value, FT, 0), relief: conv(+$("relief").value, FT, 0), spd: conv(+$("spd").value, MPH, 1),
+    const conv0 = (x, k, d) => round(toImp ? x / k : x * k, d);
+    const conv = (x, k, d) => isFinite(x) ? conv0(x, k, d) : "";
+    const next = { alt: conv(parseFloat($("alt").value), FT, 0), relief: conv(+$("relief").value, FT, 0), spd: conv(parseFloat($("spd").value), MPH, 1),
       area: round(toImp ? +$("area").value * HA_AC : +$("area").value / HA_AC, 0) };
     state.units = u;
     setFlightRanges();
@@ -1116,6 +1175,104 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       stage: stageOf(toScore(total)), score: toScore(total), lensScore: toScore(lensBlur), motionScore: toScore(motion) };
   }
 
+  // ---- What still needs entering. [button text, short name, field]
+  const NEED = {
+    mission: ["Choose the mission", "mission", () => document.querySelector(".mis-pick button")],
+    preset: ["Choose the drone", "drone", () => sel],
+    lens: ["Choose the lens", "lens", () => $("lens")],
+    mp: ["Enter the resolution", "resolution", () => $("mp")],
+    feq: ["Enter the focal length", "focal length", () => $("feq")],
+    alt: ["Enter the altitude", "altitude", () => $("alt")],
+    spd: ["Enter the flight speed", "speed", () => $("spd")],
+  };
+  let wasReady = null, previewing = false, inRec = 0, recKeep = false, restoring = false, fsUpd = null, firstT = 0;
+  let sessOn = false, sessCleared = false;                 // session store (below) switches on once the page has restored
+  const hasNum = id => parseFloat($(id).value) > 0;
+  function missing() {
+    const out = [], p = preset();
+    if (!state.mission) out.push("mission");
+    if (!sel.value) out.push("preset");
+    else if (p && p.lenses && !curLens()) out.push("lens");
+    else if (sel.value === "custom") { if (!hasNum("mp")) out.push("mp"); if (!hasNum("feq")) out.push("feq"); }
+    if (!hasNum("alt")) out.push("alt");
+    if (!hasNum("spd")) out.push("spd");
+    return out;
+  }
+  function goNeed(k) {
+    const el = NEED[k] && NEED[k][2]();
+    if (!el) return;
+    const sec = el.closest("section.panel");
+    if (sec && sec.classList.contains("collapsed")) sec.querySelector("h2").click();
+    if (el.scrollIntoView) el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    try { el.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function readyUI(miss) {
+    const ready = !miss.length, wait = !ready || state.needRec, n = miss.length;
+    $("wrap").classList.toggle("unready", wait);
+    $("fs").classList.toggle("unready", wait);
+    const box = { mission: document.querySelector(".mis-pick"), preset: sel.closest(".in"), lens: $("lens").closest(".in"),
+      mp: $("mp").closest(".in"), feq: $("feq").closest(".in"), alt: $("alt").closest(".numv"), spd: $("spd").closest(".numv") };
+    Object.entries(box).forEach(([k, el]) => el && el.classList.toggle("need", miss.includes(k)));
+    sel.classList.toggle("empty", !sel.value); $("lens").classList.toggle("empty", !$("lens").value);
+    ["alt", "spd"].forEach(id => $(id + "-r").closest(".slider").classList.toggle("unset", !hasNum(id)));
+    $("camwait").hidden = !wait;
+    $("g-use").disabled = !sel.value || (sel.value === "custom" && !(hasNum("mp") && hasNum("feq")));
+    if (fsUpd) fsUpd();
+    if (!wait) return;
+    clearTimeout(firstT);
+    if (ready) firstT = setTimeout(firstPick, 700);        // wait for typing to settle, then pick camera settings
+    $("vhead").className = "vhead wait";
+    $("vword").textContent = "Set up";
+    $("vtext").textContent = ready ? "Working out the camera settings…" : `Enter ${n === 1 ? "1 more detail" : `${n} more details`} to get the camera settings.`;
+    $("status").innerHTML = ready ? "" : `<div class="needs">${miss.map(k => `<button type="button" class="needbtn" data-need="${k}">${NEED[k][0]}</button>`).join("")}</div>`;
+    $("vrec").hidden = true;
+    $("fs-go").className = "fs-go wait"; $("fs-go").textContent = "Set up";
+    const list = miss.map(k => NEED[k][1]);
+    $("fs-need").textContent = ready ? "Working out settings…" : `${n} to enter: ${list.join(", ")}`;
+    $("fs").setAttribute("aria-label", ready ? "Working out the camera settings" : `Set up: ${n} to enter. Go to the ${list[0]}.`);
+    sum("sum-check", ready ? "Set up · working out" : `Set up · ${n} to enter`, "warn");
+    sum("sum-mission", state.mission ? M().name : "Choose the mission", state.mission ? null : "warn");
+    const p = preset(), nm = !sel.value ? "" : p ? (p.short || p.name.replace(/^DJI (Zenmuse )?/, "")) + (p.lenses && curLens() ? ` ${curLens().mm} mm` : "") : "Custom";
+    const cm = miss.filter(k => k !== "mission").map(k => NEED[k][1]);
+    const ct = cm.length ? `${cm.join(", ")} to enter` : "";
+    sum("sum-cam", nm ? nm + (ct ? " · " + ct : "") : ct.charAt(0).toUpperCase() + ct.slice(1), cm.length ? "warn" : null);
+    const m = M(), aFor = state.mission && m.altFor && p && m.altFor[kindOf(p)];
+    $("althint").className = $("spdhint").className = "fhint";
+    $("althint").textContent = hasNum("alt") ? "" : aFor ? `${m.name}: about ${len(aFor, 0)} with this camera` : state.mission && m.altMin ? `${m.name}: ${len(altFloor(), 0)} AGL or higher` : "";
+    $("spdhint").textContent = "";
+  }
+  // First time every input is in: pick aperture, shutter and ISO. The pilot's speed is never changed here;
+  // if blur needs a slower speed, Flight check says so and recommends it.
+  function firstPick() {
+    if (!state.needRec) return;
+    state.needRec = false;
+    recKeep = true;
+    try { recommend(); } finally { recKeep = false; }
+  }
+  // Recommended settings for Flight check: run Recommend, note what it would change, then put everything back
+  function recPreview() {
+    previewing = true;
+    const keep = { ap: getAp(), ss: getSs(), iso: getIso(), spd: $("spd").value, rt: $("rectext").innerHTML, why: state.recWhy, rk: recKeep };
+    const before = pilotSnap();
+    let after = before, why = [];
+    try { recKeep = !state.speedIssue; recommendCore(); after = pilotSnap(); why = state.recWhy.slice(); }
+    finally {
+      $("ap-r").value = Math.max(0, apList.indexOf(keep.ap)); fillShutters();
+      $("ss-r").value = Math.max(0, ssList.indexOf(keep.ss)); $("iso-r").value = Math.max(0, isoList.indexOf(keep.iso));
+      $("spd").value = keep.spd; $("rectext").innerHTML = keep.rt; state.recWhy = keep.why; recKeep = keep.rk;
+      calc();
+      previewing = false;
+    }
+    const keys = Object.keys(after), chg = keys.filter(k => after[k] !== before[k]);
+    $("vrec").hidden = false;
+    $("vrec").classList.toggle("none", !chg.length);
+    $("vrec-h").textContent = chg.length ? "Recommended settings" : "No better settings";
+    $("vrec-list").innerHTML = chg.length ? keys.map(k => `<li class="${chg.includes(k) ? "chg" : ""}"><span>${k}</span>${chg.includes(k) ? `<s>${before[k]}</s> → ` : ""}<b>${after[k]}</b></li>`).join("") : "";
+    $("vrec-why").innerHTML = chg.length ? why.join(" ")
+      : (why.length ? why.join(" ") + " " : "These are already the best settings for this light, height and mission. ") + "Change the altitude, wait for better light, or re-measure.";
+    $("vfix").hidden = !chg.length;
+  }
+
   function calc() {
     const p = preset();
     const sw = +$("sw").value, sh = +$("sh").value, diag = Math.hypot(sw, sh);
@@ -1136,6 +1293,16 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     $("light-v").innerHTML = `${lp.name}<small>EV ${lp.ev}</small>`;
     $("lr-ev").textContent = `EV ${measuredEv !== null ? fmt(measuredEv, 1) : lp.ev}`;
     $("lr-name").textContent = measuredEv !== null ? `Near ${lp.name.toLowerCase()}` : lp.name;
+    const lensOk = !(p && p.lenses) || !!curLens();
+    if (p) $("camsum").innerHTML = `<b>${mp} MP${lensOk ? ` @ ${eq} mm` : ""}</b>${infoBtn("camsum", "resolution and focal length")}<span>${lensOk ? `35 mm equivalent · ${+$("fmin").value === fmax ? `f/${fmax} fixed` : `f/${fmax}–f/${$("fmin").value}`} · ` : "Choose the lens fitted · "}${p.electronic ? "electronic shutter" : p.global ? "global shutter" : "mechanical"} to 1/${p.smax.toLocaleString()} s · ISO ${isoList[0].toLocaleString()}–${p.isoMax.toLocaleString()}</span>`;
+    // Nothing is pre-filled: results wait until the mission, drone (and lens), altitude and speed are all entered
+    const miss = missing(), okIn = !miss.length;
+    if (okIn && wasReady === false && !restoring) state.needRec = true;    // just completed: pick camera settings
+    if (!okIn) state.needRec = false;
+    wasReady = okIn;
+    readyUI(miss);
+    sessSave(okIn && !state.needRec);
+    if (!okIn || state.needRec) { last = null; return; }
     const altIn = +$("alt").value, spdIn = +$("spd").value, areaIn = +$("area").value, reliefIn = +$("relief").value;
     const alt = imp() ? altIn * FT : altIn;
     const v = imp() ? spdIn * MPH : spdIn;
@@ -1145,7 +1312,6 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const longAcross = $("orient").value === "across";
     if (!(sw > 0 && sh > 0 && mp > 0 && f > 0 && alt > 0 && v > 0 && ss > 0 && N > 0)) return;
 
-    if (p) $("camsum").innerHTML = `<b>${mp} MP @ ${eq} mm</b>${infoBtn("camsum", "resolution and focal length")}<span>35 mm equivalent · ${+$("fmin").value === fmax ? `f/${fmax} fixed` : `f/${fmax}–f/${$("fmin").value}`} · ${p.electronic ? "electronic shutter" : p.global ? "global shutter" : "mechanical"} to 1/${p.smax.toLocaleString()} s · ISO ${isoList[0].toLocaleString()}–${p.isoMax.toLocaleString()}</span>`;
 
     const aspect = sw / sh;
     const nw = Math.sqrt(mp * 1e6 * aspect), nh = nw / aspect;
@@ -1348,7 +1514,10 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     $("vtext").textContent = vMsg;
     // Fix settings re-runs the recommendation; it can't fix altitude rules, rolling shutter or old light
     const fixable = checks.some(c => c[0] !== "good" && c[2] !== "soft" && !/minimum|120 m|Electronic shutter|re-measure/.test(c[1]));
-    $("vfix").hidden = vlv === "good" || !fixable;
+    // Not Go and a setting can help: Flight check shows the recommended settings (worked out after this render)
+    const wantPreview = vlv !== "good" && fixable && !previewing && !inRec;
+    state.speedIssue = blurPx > bl || (ms && msBlur > bl) || interval < miE;   // only then may Recommended change the speed
+    if (vlv === "good" || !fixable) $("vrec").hidden = true;
     $("fs-go").className = "fs-go " + vlv; $("fs-go").textContent = vWord;
     sum("sum-check", `${vWord} · ${vlv === "good" ? "inside every limit" : vlv === "warn" ? `${nWarn} to check` : `${nBad} to fix`}`, vlv);
     sum("sum-sharp", `${sh0.score}% · ${st.label.toLowerCase()}`);
@@ -1373,7 +1542,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     if (ms && msBlur > bl) warnings.push("multispectral blur");
     if (!["s5", "s4", "s3"].includes(st.key)) warnings.push("sharpness");     // same line as Flight check: "fair" is flyable
     $("pilotwarn").hidden = !warnings.length;
-    $("pilotwarn").textContent = warnings.length ? `Fix ${warnings.join(", ")} before entering these settings (Fix settings in Flight check).` : "";
+    $("pilotwarn").textContent = warnings.length ? `Fix ${warnings.join(", ")} before entering these settings: see Recommended settings in Flight check.` : "";
     const terrain = relief > alt * 0.1;
     const lensObj = curLens();
     // Rows: [setting, value, note, show] — show: "both", "adv" (Advanced only) or "quick" (Quick only)
@@ -1509,6 +1678,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     if (ms && msGain > 1.05) adv.push(`Low light for the multispectral cameras: they need about ${fmt(msGain, 1)}× gain at 1/30 s, which adds noise to NDVI. Fly in brighter light if you can.`);
     if (ms) adv.push(`Keep the Mavic 3M's sunlight sensor (on top) clear. It records changes in light so NDVI stays comparable between flights.`);
     $("advice").innerHTML = adv.map(a => `<li>${a}</li>`).join("");
+    if (wantPreview) recPreview();
   }
 
   // Recommended settings for the current altitude and light.
@@ -1526,6 +1696,12 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   const TURN_S = 6;   // rough seconds per line turn for a mapping drone
   const prefApOf = () => Math.min(PREF_APERTURE, apList[apList.length - 1]);
   function recommend() {
+    inRec++;
+    try { recommendCore(); } finally { inRec--; }
+    if (!inRec && !previewing) calc();               // one final render, which may show Recommended settings
+  }
+  function recommendCore() {
+    state.recWhy = [];
     calc();
     if (!last) return;
     const { cam, gsd, bl, maxSpdInterval, alt, L } = last;
@@ -1566,6 +1742,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     });
     if (!combos.length) {
       $("rectext").innerHTML = `Too dark for this camera at ISO ${cap.toLocaleString()} or below. Raise the max ISO on the Advanced tab or wait for better light.`;
+      state.recWhy = [$("rectext").innerHTML];
       return;
     }
     const keep = combos.filter(c => c.v >= v0 - 1e-6);
@@ -1589,14 +1766,19 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     fillShutters();
     $("ss-r").value = ssList.indexOf(ss);
     $("iso-r").value = isoList.indexOf(iso);
-    if (slowed) $("spd").value = imp() ? round(v / MPH, 1) : v;
+    if (slowed && !recKeep) $("spd").value = imp() ? round(v / MPH, 1) : v;   // first pick never changes the pilot's speed
     calc();
+    if (!previewing) state.picked = true;
     const lightName = curLight().name.toLowerCase();
     // Lowest altitude where the slowest speed and fastest shutter stay within the blur limit
     const altOk = vMin * (1 / ss) * cam.f / (bl * cam.pitch);
-    $("rectext").innerHTML = `Set for ${len(alt, 0)} in ${lightName}: <b>f/${ap}</b>, <b>1/${ss.toLocaleString()} s</b>, <b>ISO ${iso.toLocaleString()}</b>${slowed ? `, speed reduced to <b>${spdS(v)}</b>` : ""}.`
-      + (relaxed && (ap < prefApOf() - 0.05 || iso > PREF_ISO) ? ` Not enough light for f/${prefApOf()} at ISO ${PREF_ISO} or below, so ${[ap < prefApOf() - 0.05 ? "the aperture was opened" : "", iso > PREF_ISO ? "ISO was raised" : ""].filter(Boolean).join(" and ")}.` : "")
-      + (tooLow ? ` Even at the slowest speed, motion blur stays over the limit at this height. Fly at <b>${len(Math.ceil(altOk), 0)}</b> or higher.` : "");
+    const why = [];
+    if (relaxed && (ap < prefApOf() - 0.05 || iso > PREF_ISO)) why.push(`Not enough light for f/${prefApOf()} at ISO ${PREF_ISO} or below, so ${[ap < prefApOf() - 0.05 ? "the aperture was opened" : "", iso > PREF_ISO ? "ISO was raised" : ""].filter(Boolean).join(" and ")}.`);
+    if (slowed && recKeep && last.v / ss / last.gsd > bl + 1e-9) why.push(`To keep blur inside the limit at this height, fly at <b>${spdS(v)}</b> or slower.`);
+    if (tooLow) why.push(`Even at the slowest speed, motion blur stays over the limit at this height. Fly at <b>${len(Math.ceil(altOk), 0)}</b> or higher.`);
+    state.recWhy = why;
+    $("rectext").innerHTML = `Set for ${len(alt, 0)} in ${lightName}: <b>f/${ap}</b>, <b>1/${ss.toLocaleString()} s</b>, <b>ISO ${iso.toLocaleString()}</b>${slowed && !recKeep ? `, speed reduced to <b>${spdS(v)}</b>` : ""}.`
+      + (why.length ? " " + why.join(" ") : "");
   }
 
   function drawSchematic(across, along, ps, ls) {
@@ -1681,18 +1863,13 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   // ---- Wire up
   $("sw").value = 17.3; $("sh").value = 13.0; $("fmax").value = 2.8; $("fmin").value = 11; $("mi").value = 1.0;
   setFlightRanges();
-  ["alt", "spd", "fo", "so", "bl", "area", "relief", "mp", "feq", "smax", "isomax", "isocap", "isomin"].forEach(k => $(k).value = defaults[k]);
+  ["fo", "so", "bl", "area", "relief", "smax", "isomax", "isocap", "isomin"].forEach(k => $(k).value = defaults[k]);
   $("stype").value = "mechanical";
   $("light").value = LIGHT_ORDER.findIndex(l => l.id === defaults.light);
   $("orient").value = defaults.orient;
-  sel.value = defaults.preset; applyPreset();
+  sel.value = ""; applyPreset();
 
-  sel.addEventListener("change", () => {
-    applyPreset();
-    const a0 = M().altFor && preset() && M().altFor[kindOf(preset())];   // weed mapping: each camera's starting height
-    // Recommend after this change event has bubbled, so the "settings changed" reset doesn't wipe its note
-    if (a0) { $("alt").value = imp() ? Math.round(a0 / FT) : a0; calc(); setTimeout(recommend, 0); } else calc();
-  });
+  sel.addEventListener("change", () => { applyPreset(); calc(); });
   $("lens").addEventListener("change", () => { applyLens(); calc(); });
   $("ap-r").addEventListener("input", fillShutters);
   fmtSel.addEventListener("change", () => {
@@ -1712,23 +1889,28 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     // On leaving the box: empty or out-of-range values snap back inside the sanity limits
     $(id).addEventListener("change", () => {
       const [lo, hi] = LIMIT[id][state.units], v = parseFloat($(id).value);
+      if (!isFinite(v) && (id === "alt" || id === "spd")) { $(id).value = ""; calc(); return; }   // left empty: still to enter
       $(id).value = isFinite(v) ? Math.min(hi, Math.max(lo, v)) : (lastGood[id] ?? $(id + "-r").value);
       calc();
     });
   });
   $("rec").addEventListener("click", recommend);
   $("vfix").addEventListener("click", () => {
-    const was = JSON.stringify(pilotSnap());
-    recommend();
-    $("vnote").innerHTML = JSON.stringify(pilotSnap()) === was
-      ? "These are already the best settings for this light, height and mission. Change the altitude, wait for better light, or re-measure."
-      : $("rectext").innerHTML || "Settings re-picked for this light, altitude and mission.";
+    const was = pilotSnap();
+    recKeep = !state.speedIssue;                          // same rule as the preview, so it applies exactly what was shown
+    try { recommend(); } finally { recKeep = false; }
+    const now = pilotSnap(), chg = Object.keys(now).filter(k => now[k] !== was[k]), p = preset();
+    $("vnote").innerHTML = chg.length
+      ? `Updated: ${chg.map(k => `${k} <b>${now[k]}</b>`).join(", ")}. Enter ${chg.length > 1 ? "these" : "it"} in ${p && (p.app || p.saved) ? "your flight app" : "DJI Pilot 2"}.`
+      : "These are already the best settings for this light, height and mission.";
   });
+  $("status").addEventListener("click", e => { const b = e.target.closest("[data-need]"); if (b) goNeed(b.dataset.need); });
   // −/+ steppers: whole steps a gloved thumb can hit (5 m / 10 ft, 0.5 m/s / 1 mph)
   const STEP = { alt: [5, 10], spd: [0.5, 1] };
   document.querySelectorAll(".step").forEach(b => b.addEventListener("click", e => {
     e.preventDefault();                                               // inside a label: don't focus the box
     const id = b.dataset.step, d = +b.dataset.d, st = STEP[id][imp() ? 1 : 0], el = $(id);
+    if (!isFinite(parseFloat(el.value))) { el.focus(); return; }       // empty: type the first value
     const v = parseFloat(el.value) || 0, [lo, hi] = LIMIT[id][state.units];
     let nv = d > 0 ? Math.floor(v / st + 1e-9) * st + st : Math.ceil(v / st - 1e-9) * st - st;
     nv = Math.min(hi, Math.max(d < 0 && v > st ? st : lo, Math.round(nv * 100) / 100));
@@ -1737,30 +1919,23 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   }));
   // ---- Mission type: picks the drone and lens, ISO ceiling and starting altitude
   function setMission(id, apply) {
-    state.mission = MISSIONS[id] ? id : "other";
-    try { localStorage.setItem("dl-mission", state.mission); } catch (e) {}
+    state.mission = MISSIONS[id] ? id : null;
     const m = M();
     document.querySelectorAll(".mis-pick button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mis === state.mission));
     $("cricket-l").hidden = !m.cricket;
-    $("mis-rules").innerHTML = m.rules;
+    $("mis-rules").innerHTML = state.mission ? m.rules : "Choose the mission first: it sets which drones and lenses fit, the ISO limit and the minimum height.";
     buildPresetOptions();
     if (apply) {
-      if (m.preset) sel.value = m.preset;
-      if (m.lens && sel.value === "p1") { state.lensFor = "p1"; state.selectLens = m.lens; }
-      const a0 = (m.altFor && preset() && m.altFor[kindOf(preset())]) || m.alt;
-      if (a0) $("alt").value = imp() ? Math.round(a0 / FT) : a0;
       $("relief").value = imp() ? Math.round((m.relief || defaults.relief) / FT) : (m.relief || defaults.relief);   // grass is flat
     }
     $("isocap").value = m.isoCap || defaults.isocap;
     $("rectext").textContent = "";
     applyPreset(); calc();
   }
-  document.querySelectorAll(".mis-pick button").forEach(b => b.addEventListener("click", () => { setMission(b.dataset.mis, true); recommend(); }));
+  document.querySelectorAll(".mis-pick button").forEach(b => b.addEventListener("click", () => { setMission(b.dataset.mis, true); if (state.picked) { recKeep = true; try { recommend(); } finally { recKeep = false; } } }));
   $("cricket").addEventListener("change", calc);
-  let savedMission = null;
-  try { savedMission = localStorage.getItem("dl-mission"); } catch (e) {}
-  setMission(savedMission || "site", true);
-  recommend();                                           // start every visit from clean settings for the mission
+  try { localStorage.removeItem("dl-mission"); } catch (e) {}   // old always-remembered mission; now part of the 2-hour session
+  setMission(null, false);
   d0site();
   function d0site() {
     document.querySelectorAll(".site-pick button").forEach(b => b.addEventListener("click", () => {
@@ -1883,7 +2058,7 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
   });
   // ---- Measured light: kept on this device so a long day of flights can re-check it quickly.
   // Light changes through the day, so a reading older than LIGHT_STALE_MIN asks to be re-measured.
-  const LIGHT_KEY = "dl-light-v1", LIGHT_STALE_MIN = 30, LIGHT_KEEP_H = 3;
+  const LIGHT_KEY = "dl-light-v1", LIGHT_STALE_MIN = 30, LIGHT_KEEP_H = 2;
   let lightAt = null;
   const clock = ms => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   function sum(id, text, lvl) { const el = $(id); if (!el) return; el.textContent = text; el.className = "hsum" + (lvl && lvl !== "good" || lvl === "good" && id === "sum-check" ? " " + lvl : ""); }
@@ -1918,8 +2093,11 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       + (ev < LIGHT_ORDER[0].ev - 0.5 ? " Very low light: expect high ISO or a slow shutter." : "");
     lightUI();
     if (!fresh) return;
-    // A new reading re-picks the settings for this light, then lists only what changed
-    recommend();
+    // A new reading re-picks the settings for this light, then lists only what changed.
+    // Speed changes only if blur or photo spacing would otherwise be over the limit.
+    recKeep = true; try { recommend(); } finally { recKeep = false; }
+    if (last && state.speedIssue) recommend();
+    if (!last) { $("lm-chg").hidden = true; return; }
     const after = pilotSnap(), chg = Object.keys(after).filter(k => after[k] !== before[k]);
     const dEv = measuredEv - prevEv, box = $("lm-chg");
     const since = prevAt ? `since ${clock(prevAt)}` : "from the preset";
@@ -2108,10 +2286,77 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     $("lm-msg").textContent = LM_HELP;
     lightUI(); calc();
   });
-  // A recent reading carries over a reload; the page then re-recommends for that light
+  // ---- Session: an active mission's inputs stay on this phone (browser storage, never sent anywhere) and clear
+  // after 2 hours without use. Opening the app or having it on screen counts as use.
+  const SESS_KEY = "dl-session-v1", SESS_H = 2;
+  const SESS_IDS = ["lens", "mp", "feq", "alt", "spd", "fo", "so", "bl", "area", "relief", "orient", "isocap", "light", "sw", "sh", "fmax", "fmin", "smax", "isomax", "isomin", "stype", "mi"];
+  const sessRead = () => { try { return JSON.parse(localStorage.getItem(SESS_KEY) || "null"); } catch (e) { return null; } };
+  const sessExpired = s => !s || !s.at || Date.now() - s.at > SESS_H * 3600000;
+  function sessTouch() { const s = sessRead(); if (s && s.v) try { s.at = Date.now(); localStorage.setItem(SESS_KEY, JSON.stringify(s)); } catch (e) {} }
+  function sessUI(has) {
+    $("sess").hidden = !has && !sessCleared;
+    $("sess-t").className = "sess-t" + (has ? "" : " cleared");
+    $("sess-t").textContent = has ? "Saved on this phone. Clears after 2 hours unused." : "Last mission cleared after 2 hours unused. Enter today's details.";
+    $("sess-new").hidden = !has || !$("sess-ask").hidden;
+    if (!has) $("sess-ask").hidden = true;
+  }
+  function sessSave(withCam) {
+    if (!sessOn || restoring || previewing) return;
+    if (state.pendingSess) { sessTouch(); return; }        // a saved profile is still loading: keep what was stored
+    const v = { units: state.units, mission: state.mission, cricket: $("cricket").checked, preset: sel.value, picked: !!state.picked };
+    SESS_IDS.forEach(id => v[id] = $(id).value);
+    if (withCam) { v.ap = getAp(); v.ss = getSs(); v.iso = getIso(); }
+    const has = !!(state.mission || sel.value || $("alt").value !== "" || $("spd").value !== "");
+    try { if (has) localStorage.setItem(SESS_KEY, JSON.stringify({ at: Date.now(), v })); else localStorage.removeItem(SESS_KEY); } catch (e) {}
+    if (has) sessCleared = false;
+    sessUI(has);
+  }
+  const hasOpt = (s2, val) => [...s2.options].some(o => o.value === String(val));
+  function sessApply(v) {
+    if (v.units && v.units !== state.units) $(v.units === "imperial" ? "u-i" : "u-m").click();
+    $("cricket").checked = !!v.cricket;
+    setMission(v.mission, false);
+    if (v.preset && hasOpt(sel, v.preset)) { sel.value = v.preset; state.pendingSess = null; applyPreset(); }
+    else if (v.preset && /^sp:/.test(v.preset)) state.pendingSess = v;
+    if (sel.value === "custom") {
+      ["mp", "feq", "sw", "sh", "fmax", "fmin", "smax", "isomax", "isomin", "stype", "mi"].forEach(id => { if (v[id] != null) $(id).value = v[id]; });
+      syncFormat(); fillIsos(); fillApertures(); fillShutters();
+    }
+    if (v.lens && hasOpt($("lens"), v.lens)) { $("lens").value = v.lens; applyLens(); }
+    ["alt", "spd", "fo", "so", "bl", "area", "relief", "orient", "isocap"].forEach(id => { if (v[id] != null) $(id).value = v[id]; });
+    if (v.light != null && v.light !== "" && measuredEv === null) $("light").value = v.light;
+    if (v.ap != null) { $("ap-r").value = nearestIdx(apList, v.ap); fillShutters(); }
+    if (v.ss != null) $("ss-r").value = nearestIdx(ssList, v.ss);
+    if (v.iso != null) $("iso-r").value = nearestIdx(isoList, v.iso);
+    state.picked = !!v.picked;
+    wasReady = v.ap != null ? true : false;                  // saved without camera settings: pick them once complete
+    calc();
+  }
+  // New mission, or 2 hours unused: back to an empty form (a 2-hour reset also drops the light reading)
+  function sessReset(expired) {
+    clearTimeout(firstT);
+    try { localStorage.removeItem(SESS_KEY); if (expired) localStorage.removeItem(LIGHT_KEY); } catch (e) {}
+    sessOn = false;
+    if (expired && measuredEv !== null) { measuredEv = null; lightAt = null; $("lm-msg").className = "hint"; $("lm-msg").textContent = LM_HELP; }
+    $("cricket").checked = false;
+    ["mp", "feq", "alt", "spd"].forEach(id => $(id).value = "");
+    ["fo", "so", "bl", "area", "relief", "isocap"].forEach(id => $(id).value = imp() && (id === "relief") ? Math.round(defaults[id] / FT) : imp() && id === "area" ? Math.round(defaults[id] * HA_AC) : defaults[id]);
+    $("orient").value = defaults.orient;
+    state.lastP = null; state.lensFor = null; state.selectLens = null; state.pendingSess = null; state.picked = false; state.needRec = false;
+    sel.value = "";
+    setMission(null, false);
+    ["lm-chg", "vrec"].forEach(id => $(id).hidden = true);
+    $("vnote").textContent = ""; $("rectext").textContent = "";
+    sessCleared = !!expired;
+    sessOn = true;
+    lightUI(); calc(); sessUI(false);
+  }
+  const s0 = sessRead();
+  if (s0 && sessExpired(s0)) { try { localStorage.removeItem(SESS_KEY); localStorage.removeItem(LIGHT_KEY); } catch (e) {} sessCleared = true; }
+  // A recent reading carries over a reload (the session restores the settings that went with it)
   try {
     const st = JSON.parse(localStorage.getItem(LIGHT_KEY) || "null");
-    if (st && isFinite(st.ev) && st.at && Date.now() - st.at < LIGHT_KEEP_H * 3600000) { applyEv(st.ev, st.how || "Camera reading", st.at); recommend(); }
+    if (st && isFinite(st.ev) && st.at && Date.now() - st.at < LIGHT_KEEP_H * 3600000) applyEv(st.ev, st.how || "Camera reading", st.at);
   } catch (e) {}
   lightUI();
   setInterval(lightUI, 30000);
@@ -2296,6 +2541,11 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
       saved = snap.docs.map(d => toPreset(d.id, d.data())).filter(Boolean);
       const before = sel.value;
       const switched = buildPresetOptions();
+      if (state.pendingSess && saved.some(p => p.id === state.pendingSess.preset)) {
+        const v = state.pendingSess; restoring = true;
+        try { sessApply(v); } catch (e) {} finally { restoring = false; state.pendingSess = null; }
+        sessSave(!!last);
+      }
       if (state.selectAfter && saved.some(p => p.id === state.selectAfter)) { sel.value = state.selectAfter; state.selectAfter = null; }
       if (switched || sel.value !== before || (preset() && preset().saved)) { applyPreset(); }
       profUI(); calc();
@@ -2310,13 +2560,16 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     const seen = new Map();
     const upd = () => {
       const k = phoneQ.matches ? $("check") : document.querySelector("svg.donut");
-      $("fs").hidden = (seen.get(k) || 0) >= (phoneQ.matches ? 0.3 : 0.65);
+      $("fs").hidden = (!phoneQ.matches && $("wrap").classList.contains("unready")) || (seen.get(k) || 0) >= (phoneQ.matches ? 0.3 : 0.65);
     };
+    fsUpd = upd;
     const io = new IntersectionObserver(es => { es.forEach(e => seen.set(e.target, e.intersectionRatio)); upd(); }, { threshold: [0, 0.3, 0.65, 1] });
     io.observe($("check")); io.observe(document.querySelector("svg.donut"));
     phoneQ.addEventListener && phoneQ.addEventListener("change", upd);
   }
   $("fs").onclick = () => {
+    const miss = missing();
+    if (miss.length) return goNeed(miss[0]);
     const tgt = phoneQ.matches ? $("check") : $("sharp");
     if (tgt.classList.contains("collapsed") && phoneQ.matches) tgt.querySelector("h2").click();
     tgt.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
@@ -2350,10 +2603,11 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     gCalc();
   }
   function gUseDrone() {
+    if (!sel.value) return;
     const p = preset(), sw = +$("sw").value, sh = +$("sh").value;
     $("g-mp").value = p ? p.mp : +$("mp").value;
     $("g-fl").value = p ? (p.lenses ? Math.round(+$("lens").value * 43.27 / Math.hypot(sw, sh)) : p.eq) : +$("feq").value;
-    $("g-alt").value = $("alt").value;
+    if (hasNum("alt")) $("g-alt").value = $("alt").value;
     gAspect(Math.abs(sw / sh - 1.5) < Math.abs(sw / sh - 4 / 3) ? 3 / 2 : 4 / 3);
   }
   let gReturn = null;
@@ -2387,6 +2641,22 @@ footer { margin-top: 22px; font-size: 12px; color: var(--muted); max-width: 90ch
     gCalc();
   }));
   G.units = state.units;
+
+  // ---- Restore the active mission on this phone, then keep it while the app is open
+  const s1 = sessRead();
+  if (s1 && s1.v && !sessExpired(s1)) { restoring = true; try { sessApply(s1.v); } catch (e) {} finally { restoring = false; } }
+  sessOn = true;
+  if (s1 && s1.v && s1.v.ap == null && !missing().length) state.needRec = true;   // complete but no settings saved yet
+  calc();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    const s = sessRead();
+    if (s && s.v && sessExpired(s)) sessReset(true); else sessTouch();
+  });
+  setInterval(() => { if (document.visibilityState === "visible") sessTouch(); }, 60000);
+  $("sess-new").onclick = () => { $("sess-ask").hidden = false; $("sess-new").hidden = true; $("sess-yes").focus(); };
+  $("sess-no").onclick = () => { $("sess-ask").hidden = true; $("sess-new").hidden = false; };
+  $("sess-yes").onclick = () => { $("sess-ask").hidden = true; sessReset(false); };
 })();
 </script>
 
