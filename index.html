@@ -1233,7 +1233,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     $("vrec").hidden = true;
     $("fs-go").className = "fs-go wait"; $("fs-go").textContent = "Set up";
     const list = miss.map(k => NEED[k][1]);
-    $("fs-need").textContent = ready ? "Working out settings…" : list.join(", ").replace(/^./, c => c.toUpperCase());
+    $("fs-need").textContent = ready ? "Working out settings…" : n === 1 ? NEED[miss[0]][0] : list.join(", ").replace(/^./, c => c.toUpperCase());
     $("fs").setAttribute("aria-label", ready ? "Working out the camera settings" : `Set up: ${n} to enter. Go to the ${list[0]}.`);
     sum("sum-check", ready ? "Set up · working out" : `Set up · ${n} to enter`, "warn");
     sum("sum-mission", state.mission ? M().name : "Choose the mission", state.mission ? null : "warn");
