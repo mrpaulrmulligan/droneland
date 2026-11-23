@@ -246,6 +246,7 @@ input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent); heigh
 .lread { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 8px; background: var(--field); border: 1.5px solid var(--line); border-left-width: 5px; }
 .lread.measured { border-color: var(--good); }
 .lread.stale { border-color: var(--warn); }
+.lread.none .lr-ev, .lread.none .lr-name { color: var(--muted); }
 .lr-ev { font: 500 30px var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1; }
 .lr-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .lr-name { font: 600 16px var(--f-body); }
@@ -423,6 +424,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
   .copybtn { min-height: 34px; padding-inline: 12px; }
   .colbtn { width: 36px; height: 36px; margin: -8px -8px -8px 0; }
   .lmeter { display: block; }                                          /* camera light meter */
+  .lpreset { display: none; }                                         /* phones: light comes only from a camera reading, never a guess */
   .ph-only { display: inline; }
   /* Field order on phones: verdict, then what to enter in Pilot 2, then the headline numbers */
   .out > #check { order: -3; } .out > #pilot { order: -2; } .out > #big { order: -1; }
@@ -1176,7 +1178,9 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
   }
 
   // ---- What still needs entering. [button text, short name, field]
+  const meterOnly = () => matchMedia("(max-width: 700px)").matches;   // phones: light from the camera meter only
   const NEED = {
+    light: ["Measure the light", "light", () => [...document.querySelectorAll(".lmeter .lmbtn")].find(b => b.offsetParent) || $("lread")],
     mission: ["Choose the mission", "mission", () => document.querySelector(".mis-pick button")],
     preset: ["Choose the drone", "drone", () => sel],
     lens: ["Choose the lens", "lens", () => $("lens")],
@@ -1190,6 +1194,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
   const hasNum = id => parseFloat($(id).value) > 0;
   function missing() {
     const out = [], p = preset();
+    if (meterOnly() && measuredEv === null) out.push("light");
     if (!state.mission) out.push("mission");
     if (!sel.value) out.push("preset");
     else if (p && p.lenses && !curLens()) out.push("lens");
@@ -1210,7 +1215,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     const ready = !miss.length, wait = !ready || state.needRec, n = miss.length;
     $("wrap").classList.toggle("unready", wait);
     $("fs").classList.toggle("unready", wait);
-    const box = { mission: document.querySelector(".mis-pick"), preset: sel.closest(".in"), lens: $("lens").closest(".in"),
+    const box = { light: $("lread"), mission: document.querySelector(".mis-pick"), preset: sel.closest(".in"), lens: $("lens").closest(".in"),
       mp: $("mp").closest(".in"), feq: $("feq").closest(".in"), alt: $("alt").closest(".numv"), spd: $("spd").closest(".numv") };
     Object.entries(box).forEach(([k, el]) => el && el.classList.toggle("need", miss.includes(k)));
     sel.classList.toggle("empty", !sel.value); $("lens").classList.toggle("empty", !$("lens").value);
@@ -1233,7 +1238,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     sum("sum-check", ready ? "Set up · working out" : `Set up · ${n} to enter`, "warn");
     sum("sum-mission", state.mission ? M().name : "Choose the mission", state.mission ? null : "warn");
     const p = preset(), nm = !sel.value ? "" : p ? (p.short || p.name.replace(/^DJI (Zenmuse )?/, "")) + (p.lenses && curLens() ? ` ${curLens().mm} mm` : "") : "Custom";
-    const cm = miss.filter(k => k !== "mission").map(k => NEED[k][1]);
+    const cm = miss.filter(k => k !== "mission" && k !== "light").map(k => NEED[k][1]);
     const ct = cm.length ? `${cm.join(", ")} to enter` : "";
     sum("sum-cam", nm ? nm + (ct ? " · " + ct : "") : ct.charAt(0).toUpperCase() + ct.slice(1), cm.length ? "warn" : null);
     const m = M(), aFor = state.mission && m.altFor && p && m.altFor[kindOf(p)];
@@ -1304,8 +1309,9 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     labelFlight();
     const lp = LIGHT_ORDER[+$("light").value] || LIGHT_ORDER[LIGHT_ORDER.length - 1];
     $("light-v").innerHTML = `${lp.name}<small>EV ${lp.ev}</small>`;
-    $("lr-ev").textContent = `EV ${measuredEv !== null ? fmt(measuredEv, 1) : lp.ev}`;
-    $("lr-name").textContent = measuredEv !== null ? `Near ${lp.name.toLowerCase()}` : lp.name;
+    const noRead = measuredEv === null && meterOnly();
+    $("lr-ev").textContent = noRead ? "EV —" : `EV ${measuredEv !== null ? fmt(measuredEv, 1) : lp.ev}`;
+    $("lr-name").textContent = noRead ? "Not measured yet" : measuredEv !== null ? `Near ${lp.name.toLowerCase()}` : lp.name;
     const lensOk = !(p && p.lenses) || !!curLens();
     if (p) $("camsum").innerHTML = `<b>${mp} MP${lensOk ? ` @ ${eq} mm` : ""}</b>${infoBtn("camsum", "resolution and focal length")}<span>${lensOk ? `35 mm equivalent · ${+$("fmin").value === fmax ? `f/${fmax} fixed` : `f/${fmax}–f/${$("fmin").value}`} · ` : "Choose the lens fitted · "}${p.electronic ? "electronic shutter" : p.global ? "global shutter" : "mechanical"} to 1/${p.smax.toLocaleString()} s · ISO ${isoList[0].toLocaleString()}–${p.isoMax.toLocaleString()}</span>`;
     // Nothing is pre-filled: results wait until the mission, drone (and lens), altitude and speed are all entered
@@ -1844,7 +1850,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     isocap: "The highest ISO the <b>Recommend</b> button will choose. Keep it <b>below 800</b> to avoid visible grain; lower is cleaner.",
     mi: "The <b>minimum capture interval</b>: how quickly the camera can take one photo after another. At high front overlap it limits how fast you can fly.",
     orient: "Which side of the photo runs <b>across the flight line</b>. Long side across track gives wider strips and fewer flight lines.",
-    light: "Light is the first thing to set because it changes through the day. On phones, <b>Measure light</b> reads the real light with the camera: aim straight down at the ground (at least 45°, ideally 90°) and it measures by itself. A reading turns amber after 30 minutes as a reminder to re-measure. Otherwise pick the closest preset. Darker conditions need a <b>wider aperture</b>, a <b>slower shutter</b> or a <b>higher ISO</b>. Clear midday sun is about EV 16 at ISO 100; ordinary bright sun about EV 15.",
+    light: "Light is the first thing to set because it changes through the day. On phones, <b>Measure light</b> reads the real light with the camera: aim straight down at the ground (at least 45°, ideally 90°) and it measures by itself. A reading turns amber after 30 minutes as a reminder to re-measure. Phones use only real readings; on a computer, for planning, pick the closest preset. Darker conditions need a <b>wider aperture</b>, a <b>slower shutter</b> or a <b>higher ISO</b>. Clear midday sun is about EV 16 at ISO 100; ordinary bright sun about EV 15.",
   };
   function infoBtn(key, name) {
     return `<button type="button" class="info" data-info="${key}" aria-expanded="${state.tip === key}" aria-label="About ${name}">i</button>`;
@@ -2085,13 +2091,14 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     const has = measuredEv !== null && lightAt, mins = has ? Math.floor((Date.now() - lightAt) / 60000) : 0;
     const stale = has && mins >= LIGHT_STALE_MIN;
     const ago = mins < 1 ? "just now" : mins < 60 ? `${mins} min ago` : `${Math.floor(mins / 60)} h ${mins % 60} min ago`;
-    $("lread").className = "lread" + (has ? stale ? " stale" : " measured" : "");
+    const need = !has && meterOnly();
+    $("lread").className = "lread" + (has ? stale ? " stale" : " measured" : need ? " none" : "") + ($("lread").classList.contains("need") ? " need" : "");
     $("lm-age").innerHTML = has ? `Measured ${clock(lightAt)} · ${ago}` + (stale ? " · re-measure" : "")
-      : `Preset estimate<span class="ph-only"> · measure for real light</span>`;
+      : need ? "Needed before any camera settings" : "Preset estimate";
     document.querySelectorAll(".lm-t").forEach(t => t.textContent = has ? "Re-measure light" : "Measure light");
     if (stale && /\bok\b/.test($("lm-msg").className)) $("lm-msg").className = "hint";
     const lp0 = LIGHT_ORDER[+$("light").value] || LIGHT_ORDER[LIGHT_ORDER.length - 1];
-    sum("sum-light", has ? `EV ${fmt(measuredEv, 1)} · ${clock(lightAt)}${stale ? " · re-measure" : ""}` : `EV ${lp0.ev} · preset`, stale ? "warn" : null);
+    sum("sum-light", has ? `EV ${fmt(measuredEv, 1)} · ${clock(lightAt)}${stale ? " · re-measure" : ""}` : need ? "Not measured" : `EV ${lp0.ev} · preset`, stale || need ? "warn" : null);
     if (stale !== wasStale) { wasStale = stale; calc(); }        // puts the old-light warning into Flight check
   }
   // What the pilot actually types: aperture, shutter, ISO and speed, as shown in the Pilot 2 card
@@ -2107,7 +2114,7 @@ select.empty { color: var(--muted); } select.empty option { color: var(--ink); }
     $("rectext").textContent = "";
     calc();
     msg.className = ev < LIGHT_ORDER[0].ev - 0.5 ? "hint warn" : "hint ok";
-    msg.textContent = `${how}. Exposure now uses this reading; move the preset slider to go back.`
+    msg.textContent = `${how}. Exposure now uses this reading${meterOnly() ? "" : "; move the preset slider to go back"}.`
       + (ev < LIGHT_ORDER[0].ev - 0.5 ? " Very low light: expect high ISO or a slow shutter." : "");
     lightUI();
     if (!fresh) return;
